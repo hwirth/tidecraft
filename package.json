@@ -1,0 +1,16 @@
+{
+  "name": "tidecraft",
+  "version": "1.0.0",
+  "description": "TODO\r ====\r [E] Drag from yard: Ship position different before and after moving the div to the table\r [ ] Introduce Board()\r [?] Ship: Sunk: Mark fields around it as \"attacked\"\r [ ] Ship: Sunk: Don't change color of TD, but of the div.ship (grid.player only, or when ships shown on opponent)\r [?] Ship: Show div/image in opponent grid, when sunk\r [E] Ship: Too long by 1px?\r [ ] AI: Find rest of ship, once a hit is landed\r [E] Take hit: Counts down, when same cell hit twice\r [ ] README.md + screenshot\r [\\] Allow dragging ship back to yard (for rotating)\r [!] Passing so many callbacks might be \"subsribing to events\", maybe use a real observer pattern.",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "eslint": "^8.54.0",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-plugin-import": "^2.29.0"
+  }
+}
