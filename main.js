@@ -15,10 +15,6 @@ export class Application {
 
     constructor () {
         console.log( `%c${PROGRAM_NAME} v${PROGRAM_VERSION}`, 'color:green');
-
-        document.body.innerHTML = '';   // Remove noscript message
-        addEventListener('keydown', this.onKeyDown);
-
         setTimeout( this.startNewGame, SETTINGS.BODY_FADE_TIME );
     }
 
@@ -167,32 +163,6 @@ export class Application {
         } else {
             this.ui.setCurrentAttacker('player1');
             this.game.nextPlayer();
-        }
-    }
-
-
-// DEBUG //////////////////////////////////////////////////////////////////////////////////////100:/
-
-    onKeyDown(event) {
-        switch (event.key) {
-            case 'i': {
-                document.body.classList.toggle('images');
-                break;
-            }
-            case 'z': {
-                document.body.classList.toggle('zoom');
-                break;
-            }
-            case '1': {
-                OPTIONS.PLAYER1_HUMAN = true;
-                console.log('Player 1: Human, player 2: Computer');
-                break;
-            }
-            case '2': {
-                OPTIONS.PLAYER1_HUMAN = false;
-                console.log('Player 1: Computer, player 2: Human');
-                break;
-            }
         }
     }
 

@@ -64,8 +64,10 @@ export class UserInterface {
         this.elements.btnReady    .addEventListener('mouseup', this.callback.playerReady);
         this.elements.btnNewGame  .addEventListener('mouseup', this.callback.newGame);
         this.elements.opponentGrid.addEventListener('mouseup', this.onOpponentGridClick);
+        addEventListener('keydown', this.onKeyDown);
 
         this.setCurrentAttacker(null);
+
         document.body.classList.remove('fade');
     }
 
@@ -78,6 +80,7 @@ export class UserInterface {
         this.elements.btnReady    .removeEventListener('mouseup', this.callback.playerReady);
         this.elements.btnNewGame  .removeEventListener('mouseup', this.callback.newGame);
         this.elements.opponentGrid.removeEventListener('mouseup', this.onOpponentGridClick);
+        removeEventListener('keydown', this.onKeyDown)
 
         if (DEBUG.INSTANCES) console.log(
             '%cUserInterface exit, instance nr.', 'color:#f00', instanceNr,
@@ -307,6 +310,32 @@ export class UserInterface {
             setTimeout( ()=>cell.className = result, SETTINGS.ANIMATE_ATTACK_TIME );
         } else {
             cell.className = result;
+        }
+    }
+
+
+// DEBUG //////////////////////////////////////////////////////////////////////////////////////100:/
+
+    onKeyDown(event) {
+        switch (event.key) {
+            case 'i': {
+                document.body.classList.toggle('images');
+                break;
+            }
+            case 'z': {
+                document.body.classList.toggle('zoom');
+                break;
+            }
+            case '1': {
+                OPTIONS.PLAYER1_HUMAN = true;
+                console.log('Player 1: Human, player 2: Computer');
+                break;
+            }
+            case '2': {
+                OPTIONS.PLAYER1_HUMAN = false;
+                console.log('Player 1: Computer, player 2: Human');
+                break;
+            }
         }
     }
 
