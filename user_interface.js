@@ -8,7 +8,6 @@ import { createDOMStructure } from './dom_structure.js';
 
 let instanceNr = 0;
 
-
 export class UserInterface {
     callback;
     elements;
@@ -16,7 +15,7 @@ export class UserInterface {
     constructor(callbacks) {
         instanceNr += 1;
         if (DEBUG.INSTANCES) console.log(
-            '%cUserInterface init, instance nr.', 'color:#fc0', instanceNr,
+            '%cUserInterface init, instance nr.', 'color:magenta', instanceNr,
         );
 
         this.callback = callbacks;
@@ -50,12 +49,12 @@ export class UserInterface {
             ships          : 'ALL div.ship',
         };
         this.elements = Object.entries( selectors ).reduce( (prev, [name, selector])=>{
-            if (selector.slice(0,3) === 'ALL') {
-                return {...prev, [name]: document.querySelectorAll(selector.slice(4))};
-            } else {
-                return {...prev, [name]: document.querySelector(selector)};
-            }
-        }, {} );
+            return (
+                (selector.slice(0,3) === 'ALL')
+                ? {...prev, [name]: document.querySelectorAll(selector.slice(4))}
+                : {...prev, [name]: document.querySelector(selector)}
+            );
+        }, {});
 
         this.elements.btnOrientation.addEventListener('mouseup', this.onOrientationClick);
         this.elements.btnShipsToYard.addEventListener('mouseup', this.moveShipsToYard);
@@ -88,6 +87,9 @@ export class UserInterface {
         return new Promise(done => setTimeout(done, SETTINGS.BODY_FADE_TIME*2));
     }
 
+
+///////////////////////////////////////////////////////////////////////////////////////////////100:/
+
     enableElement(element, enabled) {
         if (enabled) {
             element.removeAttribute('disabled');
@@ -97,12 +99,13 @@ export class UserInterface {
     }
 
     setGamePhase = this.setGamePhase.bind(this);
-    setGamePhase(phaseName) {
+    setGamePhase(phaseName, canClearBoard = false) {
         document.body.classList.remove('deploy', 'waitready', 'battle', 'defeat', 'victory');
         document.body.classList.add(phaseName);
         this.enableElement(this.elements.btnOrientation, phaseName === 'deploy');
         this.enableElement(this.elements.btnShipsToYard, phaseName === 'deploy' || phaseName === 'waitready');
         this.enableElement(this.elements.btnReady, phaseName == 'waitready');
+        this.setClearEnabled(canClearBoard);
     }
 
     setReadyEnabled(enabled) {
@@ -117,6 +120,9 @@ export class UserInterface {
         document.body.classList.toggle('player1', className === 'player1');
         document.body.classList.toggle('player2', className === 'player2');
     }
+
+
+// HELPERS ////////////////////////////////////////////////////////////////////////////////////100:/
 
     findCoords(target) {
         const gridElement = target.closest('table');
@@ -139,6 +145,9 @@ export class UserInterface {
         return cell;
     }
 
+
+// ACTIONS ////////////////////////////////////////////////////////////////////////////////////100:/
+
     moveShipsToYard = this.moveShipsToYard.bind(this);
     moveShipsToYard() {
         const bySize = (a, b) => {
@@ -160,6 +169,33 @@ export class UserInterface {
         this.elements.yard.classList.add('vertical');
         this.callback.clearBoard();
     }
+
+
+    showAttackResult({coords, result, ship}) {
+        const cell = this.findCell(this.elements.opponentGrid, coords);
+        cell.className = result;
+        if (ship) {
+            ship.cells.forEach((shipCoords)=>{
+                const cell = this.findCell(this.elements.opponentGrid, shipCoords);
+                this.animateAttack(cell, result);
+            });
+        }
+    }
+
+    showReceivedAttack({coords, result, ship}) {
+        const cell = this.findCell(this.elements.playerGrid, coords);
+        cell.className = result;
+        if (DEBUG.ATTACKS) console.log('showReceivedAttack: ship:', ship)
+        if (ship) {
+            ship.cells.forEach((shipCoords)=>{
+                const cell = this.findCell(this.elements.playerGrid, shipCoords);
+                this.animateAttack(cell, result);
+            });
+        }
+    }
+
+
+// EVENTS /////////////////////////////////////////////////////////////////////////////////////100:/
 
     onOrientationClick = this.onOrientationClick.bind(this);
     onOrientationClick(event) {
@@ -274,28 +310,6 @@ export class UserInterface {
         }
     }
 
-    showAttackResult({coords, result, ship}) {
-        const cell = this.findCell(this.elements.opponentGrid, coords);
-        cell.className = result;
-        if (ship) {
-            ship.cells.forEach((shipCoords)=>{
-                const cell = this.findCell(this.elements.opponentGrid, shipCoords);
-                this.animateAttack(cell, result);
-            });
-        }
-    }
-
-    showReceivedAttack({coords, result, ship}) {
-        const cell = this.findCell(this.elements.playerGrid, coords);
-        cell.className = result;
-        if (DEBUG.ATTACKS) console.log('showReceivedAttack: ship:', ship)
-        if (ship) {
-            ship.cells.forEach((shipCoords)=>{
-                const cell = this.findCell(this.elements.playerGrid, shipCoords);
-                this.animateAttack(cell, result);
-            });
-        }
-    }
 }
 
 //EOF

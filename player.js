@@ -15,7 +15,7 @@ class GridCell {
     }
 }
 
-// Created, once placed
+//TODO // Created once placed
 class Ship {
     orientation;
     cells;
@@ -61,25 +61,28 @@ export class Player {
         this.type = type;
         this.playerNr = playerNr;
 
-        this.reset();
-    }
-
-    reset = this.reset.bind(this);
-    reset() {
-        console.log( 'Player reset:', this.name );
-
-        this.grid = Array.from({ length: 10 }).map( (row)=>{
-            return Array.from({ length: 10 }).map( (cell)=>{
-                return new GridCell();
-            });
-        });
-
         this.notYetAttacked = [];
         for (let x = 0; x < 10; ++x) {
             for (let y = 0; y < 10; ++y) {
                 this.notYetAttacked.push({x, y});
             }
         }
+
+        this.moveShipsToYard();
+    }
+
+
+// SHIPYARD ///////////////////////////////////////////////////////////////////////////////////100:/
+
+    moveShipsToYard = this.moveShipsToYard.bind(this);
+    moveShipsToYard() {
+        console.log( 'Player.moveShipsToYard:', this.name );
+
+        this.grid = Array.from({ length: 10 }).map( (row)=>{
+            return Array.from({ length: 10 }).map( (cell)=>{
+                return new GridCell();
+            });
+        });
 
         this.ships = [];
 
@@ -90,26 +93,30 @@ export class Player {
         }, 0);
     }
 
-    checkShipsPlaced() {
-        // Will be called after player placed a ship
-        // and resolve allShipsPlaced(), when all ships were placed
-    }
 
-    allShipsPlaced() {
-        if (this.type == 'ai') {
+// WAIT FOR PLAYER READY //////////////////////////////////////////////////////////////////////100:/
+
+    isReady = this.isReady.bind(this);
+    isReady() {
+        if (this.type === 'ai') {
             this.aiPlaceShips();
             return Promise.resolve();
+        } else {
+            return new Promise( (done)=>{ this.onReadyResolve = done });
         }
-
-        return new Promise( (done)=>{
-            this.checkShipsPlaced = (nrShipsInYard)=>{
-                if (DEBUG.SHIPYARD) console.log('nrShipsInYard:', nrShipsInYard)
-                if (nrShipsInYard === 0) {
-                    done();
-                }
-            };
-        })
     }
+
+    onReadyResolve() {
+        // playerIsReady will replace this function with a conditional Promise resolve
+    }
+
+    onReadyClick = this.onReadyClick.bind(this);
+    onReadyClick() {
+        this.onReadyResolve();
+    }
+
+
+// SHIPS //////////////////////////////////////////////////////////////////////////////////////100:/
 
     placeShip = this.placeShip.bind(this);
     placeShip(coords, size, orientation) {
@@ -176,24 +183,6 @@ export class Player {
         };
     }
 
-    aiPlaceShips = this.aiPlaceShips.bind(this);
-    aiPlaceShips() {
-        SHIP_DEFINITION.forEach( (type)=>{
-            for (let i=0; i < type.amount; ++i) {
-                if (DEBUG.SHIP_DEFINITION) console.log( 'Create ship:', type );
-                let x, y, orientation;
-                do {
-                    orientation = (Math.random() < 0.5) ? 'horizontal' : 'vertical';
-                    x = Math.floor(Math.random() * 10);
-                    y = Math.floor(Math.random() * 10);
-                } while (this.callback.aiPlacedInvalid({x, y}, type.size, orientation));
-
-                this.callback.aiPlaceShip({x, y}, type.size, orientation);
-                //this.placeShip(this, {x, y}, type.size, orientation);
-            }
-        })
-    }
-
     rememberAttack = this.rememberAttack.bind(this);
     rememberAttack(coords) {
         const {x, y} = coords;
@@ -224,12 +213,36 @@ export class Player {
         return (this.nrRemainingShips === 0);
     }
 
+
+// AI /////////////////////////////////////////////////////////////////////////////////////////100:/
+
+    aiPlaceShips = this.aiPlaceShips.bind(this);
+    aiPlaceShips() {
+        SHIP_DEFINITION.forEach( (type)=>{
+            for (let i=0; i < type.amount; ++i) {
+                if (DEBUG.SHIP_DEFINITION) console.log( 'Create ship:', type );
+                let x, y, orientation;
+                do {
+                    orientation = (Math.random() < 0.5) ? 'horizontal' : 'vertical';
+                    x = Math.floor(Math.random() * 10);
+                    y = Math.floor(Math.random() * 10);
+                } while (this.callback.aiPlacedInvalid({x, y}, type.size, orientation));
+
+                //this.callback.aiPlaceShip({x, y}, type.size, orientation);
+                this.placeShip({x, y}, type.size, orientation);
+            }
+        })
+    }
+
     aiAttack = this.aiAttack.bind(this);
     aiAttack() {
         const index = Math.floor( Math.random() * (this.notYetAttacked.length - 1) );
         const coords = this.notYetAttacked[index];
         setTimeout( ()=>this.callback.attackOpponent(coords), OPTIONS.AI_ATTACK_DELAY);
     }
+
+
+// DEBUG //////////////////////////////////////////////////////////////////////////////////////100:/
 
     debugGrid = this.debugGrid.bind(this);
     debugGrid(heading = '') {

@@ -18,7 +18,7 @@ export class Game {
     constructor({player1, player2}) {
         instanceNr += 1;
         if (DEBUG.INSTANCES) console.log(
-            '%cGame init, instance nr.', 'color:#fc0', instanceNr,
+            '%cGame init, instance nr.', 'color:magenta', instanceNr,
         );
 
         if (DEBUG.SHIP_DEFINITION) console.log( 'SHIP_DEFINITION', SHIP_DEFINITION );
@@ -32,6 +32,9 @@ export class Game {
         this.setGamePhase('deploy');
     }
 
+
+///////////////////////////////////////////////////////////////////////////////////////////////100:/
+
     exit() {
         if (DEBUG.INSTANCES) console.log(
             '%cGame exit, instance nr.', 'color:#f00', instanceNr,
@@ -42,6 +45,9 @@ export class Game {
     setGamePhase(newMode) {
         this.phase = newMode;
     }
+
+
+// DEPLOY SHIPS ///////////////////////////////////////////////////////////////////////////////100:/
 
     dragShipAllowed = this.dragShipAllowed.bind(this);
     dragShipAllowed() {
@@ -85,15 +91,11 @@ export class Game {
         return allFree;
     }
 
-    ended() {
-        //TODO Use phase instead
-        return this.player1.allShipsSunk() || this.player2.allShipsSunk();
-    }
+
+// TAKE TURNS /////////////////////////////////////////////////////////////////////////////////100:/
 
     nextPlayer = this.nextPlayer.bind(this);
     nextPlayer() {
-        //if (this.ended()) return;
-
         if (this.currentAttacker !== this.player1) {
             // When player was player2 or null (first move)
             this.currentAttacker = this.player1;
@@ -114,13 +116,6 @@ export class Game {
         if (this.currentAttacker.type === 'ai') this.currentAttacker.aiAttack();
     }
 
-    attackOpponent(attacker, opponent, coords) {
-        attacker.rememberAttack(coords);
-        if (DEBUG.ATTACKS) console.log('attackOpponent:', attacker.name, opponent.name, coords);
-        const result = opponent.receiveAttack(coords);
-        if (DEBUG.ATTACKS) console.log( 'Game.attackOpponent: result:', result);
-        return result;
-    }
 }
 
 //EOF

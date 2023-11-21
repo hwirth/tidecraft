@@ -19,6 +19,7 @@ export const DEBUG = {
     GRIDS            : !false,
     SHIPYARD         :  false,
     PLACE_SHIPS      :  false,
+    GAME_PHASE       : !false,
     TURNS            : !false,
     ATTACKS          :  false,
 }

@@ -11,3 +11,4 @@ TODO
 [E] Take hit: Counts down, when same cell hit twice
 [ ] README.md + screenshot
 [\] Allow dragging ship back to yard (for rotating)
+[#] checkShipsPlaced should only resolve, once READY was clicked
