@@ -8,113 +8,101 @@ import { DEBUG, SHIP_DEFINITION } from './configuration.js';
 let instanceNr = 0;
 
 export class Game {
-    player1;
-    player2;
-    humanPlayer;
-    computerPlayer;
-    currentAttacker = null;
-    phase;
+	player1;
+	player2;
+	humanPlayer;
+	computerPlayer;
+	currentAttacker = null;
+	phase;
 
-    constructor({player1, player2}) {
-        instanceNr += 1;
-        if (DEBUG.INSTANCES) console.log(
-            '%cGame init, instance nr.', 'color:magenta', instanceNr,
-        );
+	constructor({player1, player2}) {
+		instanceNr += 1;
+		if (DEBUG.INSTANCES) console.log(
+			'%cGame init, instance nr.', 'color:magenta', instanceNr,
+		);
 
-        if (DEBUG.SHIP_DEFINITION) console.log( 'SHIP_DEFINITION', SHIP_DEFINITION );
+		if (DEBUG.SHIP_DEFINITION) console.log( 'SHIP_DEFINITION', SHIP_DEFINITION );
 
-        this.player1 = player1;
-        this.player2 = player2;
+		this.player1 = player1;
+		this.player2 = player2;
 
-        this.humanPlayer    = (player1.type === 'human') ? player1 : player2;
-        this.computerPlayer = (player1.type !== 'human') ? player1 : player2;
+		this.humanPlayer    = (player1.type === 'human') ? player1 : player2;
+		this.computerPlayer = (player1.type !== 'human') ? player1 : player2;
 
-        this.setGamePhase('deploy');
-    }
+		this.setGamePhase('deploy');
+	}
 
+	exit = () => {
+		if (DEBUG.INSTANCES) console.log(
+			'%cGame exit, instance nr.', 'color:#f00', instanceNr,
+		);
+	};
 
-///////////////////////////////////////////////////////////////////////////////////////////////100:/
+	setGamePhase = (newMode) => {
+		this.phase = newMode;
+	};
 
-    exit() {
-        if (DEBUG.INSTANCES) console.log(
-            '%cGame exit, instance nr.', 'color:#f00', instanceNr,
-        );
-    }
+	dragShipAllowed = () => {
+		return (this.phase === 'deploy' || this.phase == 'waitready');
+	};
 
-    setGamePhase = this.setGamePhase.bind(this);
-    setGamePhase(newMode) {
-        this.phase = newMode;
-    }
+	placementValid = (player, coords, size, orientation) => {
+		if ((orientation === 'horizontal') && (coords.x < 0 || coords.x > 10-size)) return false;
+		if ((orientation === 'vertical') && (coords.y < 0 || coords.y > 10-size)) return false;
 
+		const cellCoords = [];
+		const deltaX = (orientation === 'horizontal') ? 1 : 0;
+		const deltaY = (orientation === 'vertical') ? 1 : 0;
+		for (let i = 0; i < size; ++i) {
+			const x = coords.x + i*deltaX;
+			const y = coords.y + i*deltaY;
+			cellCoords.push({x, y});
+		}
 
-// DEPLOY SHIPS ///////////////////////////////////////////////////////////////////////////////100:/
+		const checkSet = new Set();
+		cellCoords.forEach( ({x, y}) => {
+			checkSet.add( JSON.stringify({x: x-1, y: y-1}) );
+			checkSet.add( JSON.stringify({x: x-1, y: y+0}) );
+			checkSet.add( JSON.stringify({x: x-1, y: y+1}) );
 
-    dragShipAllowed = this.dragShipAllowed.bind(this);
-    dragShipAllowed() {
-        return (this.phase === 'deploy' || this.phase == 'waitready');
-    }
+			checkSet.add( JSON.stringify({x: x+0, y: y-1}) );
+			checkSet.add( JSON.stringify({x: x+0, y: y-0}) );
+			checkSet.add( JSON.stringify({x: x+0, y: y+1}) );
 
-    placementValid(player, coords, size, orientation) {
-        if ((orientation === 'horizontal') && (coords.x < 0 || coords.x > 10-size)) return false;
-        if ((orientation === 'vertical') && (coords.y < 0 || coords.y > 10-size)) return false;
+			checkSet.add( JSON.stringify({x: x+1, y: y-1}) );
+			checkSet.add( JSON.stringify({x: x+1, y: y+0}) );
+			checkSet.add( JSON.stringify({x: x+1, y: y+1}) );
+		});
+		const checkCoords = Array.from(checkSet).map( string => JSON.parse(string) );
 
-        const cellCoords = [];
-        const deltaX = (orientation === 'horizontal') ? 1 : 0;
-        const deltaY = (orientation === 'vertical') ? 1 : 0;
-        for (let i = 0; i < size; ++i) {
-            const x = coords.x + i*deltaX;
-            const y = coords.y + i*deltaY;
-            cellCoords.push({x, y});
-        }
+		const allFree = !checkCoords.reduce( (prev, {x, y}) => {
+			if (x < 0 || x > 9 || y < 0 || y > 9) return prev;
+			return prev || !!player.grid[y][x].ship;
+		}, false);
 
-        const checkSet = new Set();
-        cellCoords.forEach( ({x, y}) => {
-            checkSet.add( JSON.stringify({x: x-1, y: y-1}) );
-            checkSet.add( JSON.stringify({x: x-1, y: y+0}) );
-            checkSet.add( JSON.stringify({x: x-1, y: y+1}) );
+		return allFree;
+	};
 
-            checkSet.add( JSON.stringify({x: x+0, y: y-1}) );
-            checkSet.add( JSON.stringify({x: x+0, y: y-0}) );
-            checkSet.add( JSON.stringify({x: x+0, y: y+1}) );
+	nextPlayer = () => {
+		if (this.currentAttacker !== this.player1) {
+			// When player was player2 or null (first move)
+			this.currentAttacker = this.player1;
+		} else {
+			this.currentAttacker = this.player2;
+		}
 
-            checkSet.add( JSON.stringify({x: x+1, y: y-1}) );
-            checkSet.add( JSON.stringify({x: x+1, y: y+0}) );
-            checkSet.add( JSON.stringify({x: x+1, y: y+1}) );
-        });
-        const checkCoords = Array.from(checkSet).map( string => JSON.parse(string) );
+		if (DEBUG.GRIDS) {
+			console.group('Next player: ' + this.currentAttacker.name);
+			this.player1.debugGrid();
+			this.player2.debugGrid();
+			console.groupEnd();
+		}
+		else if (DEBUG.TURNS) {
+			console.log('Next player: ' + this.currentAttacker.name);
+		}
 
-        const allFree = !checkCoords.reduce( (prev, {x, y}) => {
-            if (x < 0 || x > 9 || y < 0 || y > 9) return prev;
-            return prev || !!player.grid[y][x].ship;
-        }, false);
-
-        return allFree;
-    }
-
-
-// TAKE TURNS /////////////////////////////////////////////////////////////////////////////////100:/
-
-    nextPlayer = this.nextPlayer.bind(this);
-    nextPlayer() {
-        if (this.currentAttacker !== this.player1) {
-            // When player was player2 or null (first move)
-            this.currentAttacker = this.player1;
-        } else {
-            this.currentAttacker = this.player2;
-        }
-
-        if (DEBUG.GRIDS) {
-            console.group('Next player: ' + this.currentAttacker.name);
-            this.player1.debugGrid();
-            this.player2.debugGrid();
-            console.groupEnd();
-        }
-        else if (DEBUG.TURNS) {
-            console.log('Next player: ' + this.currentAttacker.name);
-        }
-
-        if (this.currentAttacker.type === 'ai') this.currentAttacker.aiAttack();
-    }
+		if (this.currentAttacker.type === 'ai') this.currentAttacker.aiAttack();
+	};
 
 }
 

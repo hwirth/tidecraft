@@ -10,161 +10,148 @@ import { Player } from './player.js';
 import { Game } from './game.js';
 
 export class Application {
-    game = null;
-    ui = null;
+	game;
+	ui;
 
-    constructor () {
-        console.log( `%c${PROGRAM_NAME} v${PROGRAM_VERSION}`, 'color:green');
-        setTimeout( this.startNewGame, SETTINGS.BODY_FADE_TIME );
-    }
+	constructor () {
+		console.log( `%c${PROGRAM_NAME} v${PROGRAM_VERSION}`, 'color:green');
+		setTimeout( this.startNewGame, SETTINGS.BODY_FADE_TIME );
+	}
 
+	startNewGame = async() => {
+		console.log( 'Starting new game');
 
-// RESTART ////////////////////////////////////////////////////////////////////////////////////100:/
+		if (this.game) this.game.exit();
+		if (this.ui) await this.ui.exit();
 
-    startNewGame = this.startNewGame.bind(this);
-    async startNewGame() {
-        console.log( 'Starting new game');
+		const player1isHuman = OPTIONS.PLAYER1_HUMAN;
 
-        if (this.game) this.game.exit();
-        if (this.ui) await this.ui.exit();
+		const human = new Player({
+			name     : 'Alice',
+			type     : 'human',
+			playerNr : (player1isHuman) ? 1 : 2,
+		});
 
-        const player1isHuman = OPTIONS.PLAYER1_HUMAN;
+		const computer = new Player({
+			name      : 'Bob',
+			type      : 'ai',
+			playerNr  : (player1isHuman) ? 2 : 1,
+			callbacks : {
+				aiPlacedInvalid  : (...params) => !this.game.placementValid(this.game.computerPlayer, ...params),//TODO move to Player?
+				aiPlaceShip      : this.aiPlaceShip,
+				aiAttackOpponent : this.aiAttack,
+			},
+		});
 
-        const human = new Player({
-            name     : 'Alice',
-            type     : 'human',
-            playerNr : (player1isHuman) ? 1 : 2,
-        });
+		this.game = new Game({
+			player1: (player1isHuman) ? human : computer,
+			player2: (player1isHuman) ? computer : human,
+		});
 
-        const computer = new Player({
-            name      : 'Bob',
-            type      : 'ai',
-            playerNr  : (player1isHuman) ? 2 : 1,
-            callbacks : {
-                aiPlacedInvalid : (...params) => !this.game.placementValid(this.game.computerPlayer, ...params),//TODO move to Player?
-                aiPlaceShip     : this.aiPlaceShip,
-                attackOpponent  : this.aiAttack,
-            },
-        });
+		this.ui = new UserInterface({
+			placementValid   : (...params) => this.game.placementValid(this.game.humanPlayer, ...params),
+			dragShipsAllowed : this.game.dragShipAllowed,
+			placeShip        : this.playerPlaceShip,
+			removeShipAt     : this.game.humanPlayer.removeShipAt,
+			clearBoard       : this.clearPlayerBoard,
+			attackOpponent   : this.playerAttack,
+			playerReady      : this.game.humanPlayer.onReadyClick,
+			newGame          : this.startNewGame,
+		});
 
-        this.game = new Game({
-            player1: (player1isHuman) ? human : computer,
-            player2: (player1isHuman) ? computer : human,
-        });
+		this.setGamePhase('deploy');
+		this.ui.setClearEnabled(false);
 
-        this.ui = new UserInterface({
-            placementValid   : (...params) => this.game.placementValid(this.game.humanPlayer, ...params),
-            dragShipsAllowed : this.game.dragShipAllowed,
-            placeShip        : this.playerPlaceShip,
-            removeShipAt     : this.game.humanPlayer.removeShipAt,
-            clearBoard       : this.clearPlayerBoard,
-            attackOpponent   : this.playerAttack,
-            playerReady      : this.game.humanPlayer.onReadyClick,
-            newGame          : this.startNewGame,
-        });
+		const playersReady = [
+			this.game.humanPlayer.isReady(),
+			this.game.computerPlayer.isReady(),
+		];
 
-        this.setGamePhase('deploy');
-        this.ui.setClearEnabled(false);
+		if (DEBUG.TURNS) console.log('%cWaiting for ship deployment', 'color:green');
+		if (DEBUG.GRIDS) this.game.computerPlayer.debugGrid('AI placement');
 
-        const playersReady = [
-                this.game.humanPlayer.isReady(),
-                this.game.computerPlayer.isReady(),
-        ];
+		await Promise.all(playersReady);
 
-        if (DEBUG.TURNS) console.log('%cWaiting for ship deployment', 'color:green');
-        if (DEBUG.GRIDS) this.game.computerPlayer.debugGrid('AI placement');
+		if (DEBUG.TURNS) console.log('%cPlayers ready', 'color:green');
 
-        await Promise.all(playersReady);
+		this.setGamePhase('battle');
+		this.ui.setCurrentAttacker(player1isHuman ? 'player1' : 'player2');
+		this.game.nextPlayer();
+	};
 
-        if (DEBUG.TURNS) console.log('%cPlayers ready', 'color:green');
+	setGamePhase = (newMode) => {
+		if (DEBUG.GAME_PHASE) console.log('%cApplication.setGamePhase:', 'color:blue', newMode);
+		this.ui.setGamePhase(newMode);
+		this.game.setGamePhase(newMode);
+	};
 
-        this.setGamePhase('battle');
-        this.ui.setCurrentAttacker(player1isHuman ? 'player1' : 'player2');
-        this.game.nextPlayer();
-    }
+	clearPlayerBoar = () => {
+		if (this.game.phase !== 'deploy' && this.game.phase !== 'waitready') return;
 
+		this.game.humanPlayer.moveShipsToYard();
+		this.ui?.setGamePhase('deploy');   //TODO Can we have us not called before ui exists?
 
-// GLUE LOGIC /////////////////////////////////////////////////////////////////////////////////100:/
+		if (DEBUG.GRIDS) this.game.humanPlayer.debugGrid('Bord cleared');
+	};
 
-    setGamePhase = this.setGamePhase.bind(this);
-    setGamePhase(newMode) {
-        if (DEBUG.GAME_PHASE) console.log('%cApplication.setGamePhase:', 'color:blue', newMode);
-        const ready = (this.game.humanPlayer.nrShipsInYard === 0);
-        this.ui.setGamePhase(newMode);
-        this.game.setGamePhase(newMode);
-    }
+	playerPlaceShip = (coords, shipSize, orientation) => {
+		if (DEBUG.PLACE_SHIPS) console.log( 'App.playerPlaceShip:', coords, shipSize, orientation);
 
-    clearPlayerBoard = this.clearPlayerBoard.bind(this);
-    clearPlayerBoard() {
-        if (this.game.phase !== 'deploy' && this.game.phase !== 'waitready') return;
+		const player = this.game.humanPlayer;
+		player.placeShip(coords, shipSize, orientation);
+		player.debugGrid('Placed ship');
+		this.ui.setClearEnabled(true);
 
-        this.game.humanPlayer.moveShipsToYard();
-        this.ui?.setGamePhase('deploy');   //TODO Can we have us not called before ui exists?
+		if (player.nrShipsInYard === 0) {
+			this.ui.setGamePhase('waitready', /*canClearBoard*/true);
+		} else {
+			this.ui.setGamePhase('deploy', /*canClearBoard*/true);
+		}
+	};
 
-        if (DEBUG.GRIDS) this.game.humanPlayer.debugGrid('Bord cleared');
-    }
+	playerAttack = (coords) => {
+		if (this.game.phase !== 'battle') return;
 
-    playerPlaceShip = this.playerPlaceShip.bind(this);
-    playerPlaceShip(coords, shipSize, orientation) {
-        if (DEBUG.PLACE_SHIPS) console.log( 'App.playerPlaceShip:', coords, shipSize, orientation);
+		const attacker = this.game.humanPlayer;
+		const opponent = this.game.computerPlayer;
 
-        const player = this.game.humanPlayer;
-        player.placeShip(coords, shipSize, orientation);
-        player.debugGrid('Placed ship');
-        this.ui.setClearEnabled(true);
+		if (attacker !== this.game.currentAttacker) return;
 
-        if (player.nrShipsInYard === 0) {
-            this.ui.setGamePhase('waitready', /*canClearBoard*/true);
-        } else {
-            this.ui.setGamePhase('deploy', /*canClearBoard*/true);
-        }
-    }
+		//const result = this.game.attackOpponent(attacker, opponent, coords);
+		attacker.rememberAttack(coords);
+		const result = opponent.receiveAttack(coords);
 
-    playerAttack = this.playerAttack.bind(this);
-    playerAttack(coords) {
-        if (this.game.phase !== 'battle') return;
+		if (result) this.ui.showAttackResult(result);
 
-        const attacker = this.game.humanPlayer;
-        const opponent = this.game.computerPlayer;
+		const gameWon = opponent.allShipsSunk();
+		if (gameWon) {
+			if (DEBUG.TURNS) console.log(`%cWinner: ${attacker.name}`, 'color:green');
+			this.ui.setCurrentAttacker(null);
+			this.setGamePhase('victory');
+		} else {
+			this.ui.setCurrentAttacker('player2');
+			this.game.nextPlayer();
+		}
+	};
 
-        if (attacker !== this.game.currentAttacker) return;
+	aiAttack = (coords) => {
+		const attacker = this.game.computerPlayer;
+		const opponent = this.game.humanPlayer;
 
-        //const result = this.game.attackOpponent(attacker, opponent, coords);
-        attacker.rememberAttack(coords);
-        const result = opponent.receiveAttack(coords);
+		//const result = this.game.attackOpponent(attacker, opponent, coords);
+		const result = opponent.receiveAttack(coords);
+		this.ui.showReceivedAttack(result);
 
-        if (result) this.ui.showAttackResult(result);
-
-        const gameWon = opponent.allShipsSunk();
-        if (gameWon) {
-            if (DEBUG.TURNS) console.log(`%cWinner: ${attacker.name}`, 'color:green');
-            this.ui.setCurrentAttacker(null);
-            this.setGamePhase('victory');
-        } else {
-            this.ui.setCurrentAttacker('player2');
-            this.game.nextPlayer();
-        }
-    }
-
-    aiAttack = this.aiAttack.bind(this);
-    aiAttack(coords) {
-        const attacker = this.game.computerPlayer;
-        const opponent = this.game.humanPlayer;
-
-        //const result = this.game.attackOpponent(attacker, opponent, coords);
-        const result = opponent.receiveAttack(coords);
-        this.ui.showReceivedAttack(result);
-
-        const gameWon = opponent.allShipsSunk();
-        if (gameWon) {
-            if (DEBUG.TURNS) console.log(`%cWinner: ${attacker.name}`, 'color:green');
-            this.ui.setCurrentAttacker(null);
-            this.setGamePhase('defeat');
-        } else {
-            this.ui.setCurrentAttacker('player1');
-            this.game.nextPlayer();
-        }
-    }
+		const gameWon = opponent.allShipsSunk();
+		if (gameWon) {
+			if (DEBUG.TURNS) console.log(`%cWinner: ${attacker.name}`, 'color:green');
+			this.ui.setCurrentAttacker(null);
+			this.setGamePhase('defeat');
+		} else {
+			this.ui.setCurrentAttacker('player1');
+			this.game.nextPlayer();
+		}
+	};
 
 }
 
