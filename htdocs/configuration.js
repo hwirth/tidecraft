@@ -37,6 +37,12 @@ export const SETTINGS = {
 	ZOOM_FONT_VMIN      : parseFloat(getCssVar('--vmin-font-size')),
 };
 
+export const OPTIONS = {
+	ATTACK_CELL_TWICE : DEBUG.QUICK_ATTACK,
+	AI_ATTACK_DELAY   : DEBUG.QUICK_ATTACK ? 0 : SETTINGS.ANIMATE_ATTACK_TIME*2,
+	PLAYER1_HUMAN     : true,
+};
+
 export const SIGNALS = Enum(
 	'RESET_GAME',
 	'RESET_BOARD',
@@ -61,12 +67,6 @@ export const SIGNALS = Enum(
 	'DISPLAY_DEFEAT',
 	'DISPLAY_VICTORY',
 );
-
-export const OPTIONS = {
-	ATTACK_CELL_TWICE : DEBUG.QUICK_ATTACK,
-	AI_ATTACK_DELAY   : DEBUG.QUICK_ATTACK ? 0 : SETTINGS.ANIMATE_ATTACK_TIME*2,
-	PLAYER1_HUMAN     : true,
-};
 
 const SHIP_DEFINITION_REDUCED = [
 	{type:'carrier', amount: 1, size: 4},

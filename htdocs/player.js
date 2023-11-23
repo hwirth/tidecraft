@@ -3,6 +3,78 @@
 // Battleships - copy(l)eft 2023 - https://harald.ist.org/
 ///////////////////////////////////////////////////////////////////////////////////////////////100:/
 
+import { SIGNALS } from './configuration.js';
+
+export class Player {
+	broker;
+	type;
+	playerID;
+	name;
+
+	constructor({ broker, type, playerID, name }) {
+		broker.subscribe(this.onMessage, playerID);
+		this.type     = type;
+		this.playerID = playerID;
+		this.name     = name;
+	}
+
+	onMessage = (message) => {
+		const { signal, coords } = message;
+		switch (signal) {
+			case SIGNALS.RESET_GAME      :  this.onResetGame    ();  break;
+			case SIGNALS.READY_TO_DEPLOY :  this.onReadyToDeploy();  break;
+			case SIGNALS.DEPLOY_SHIP     :  this.onDeployShip   ();  break;
+			case SIGNALS.PLACE_SHIP      :  this.onPlaceShip    ();  break;
+			case SIGNALS.WAIT_READY      :  this.onWaitReady    ();  break;
+			case SIGNALS.SELECT_TARGET   :  this.onSelectTarget ();  break;
+			case SIGNALS.TARGET_CHOSEN   :  this.onTargetChosen ();  break;
+			case SIGNALS.RECEIVE_ATTACK  :  this.onReceiveAttack();  break;
+			case SIGNALS.ATTACK_SHOWN    :  this.onAttackShown  ();  break;
+			case SIGNALS.CHECK_DEFEAT    :  this.onCheckDefeat  ();  break;
+			case SIGNALS.YOU_LOSE        :  this.onYouLose      ();  break;
+			case SIGNALS.YOU_WIN         :  this.onYouWin       ();  break;
+		}
+	};
+
+	onResetGame = () => {
+	};
+
+	onReadyToDeploy = () => {
+	};
+
+	onDeployShip = () => {
+	};
+
+	onPlaceShip = () => {
+	};
+
+	onWaitReady = () => {
+	};
+
+	onSelectTarget = () => {
+	};
+
+	onTargetChosen = () => {
+	};
+
+	onReceiveAttack = () => {
+	};
+
+	onAttackShown = () => {
+	};
+
+	onCheckDefeat = () => {
+	};
+
+	onYouLose = () => {
+	};
+
+	onYouWin = () => {
+	};
+
+}
+
+/*
 import { OPTIONS, DEBUG, SHIP_DEFINITION } from './configuration.js';
 
 class GridCell {
@@ -252,5 +324,6 @@ export class Player {
 	};
 
 }
+*/
 
 //EOF

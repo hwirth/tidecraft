@@ -3,6 +3,39 @@
 // Battleships - copy(l)eft 2023 - https://harald.ist.org/
 ///////////////////////////////////////////////////////////////////////////////////////////////100:/
 
+import { SIGNALS } from './configuration.js';
+import { createDOMStructure } from './dom_structure.js';
+
+export class UserInterface {
+	constructor({ broker }) {
+		broker.subscribe(this.onMessage.bind(this));
+		createDOMStructure();
+	}
+
+	onMessage(message) {
+		switch (message.signal) {
+			case SIGNALS.RESET_BOARD   :  this.onResetBoard();    break;
+			case SIGNALS.START_PLACING :  this.onStartPlacing();  break;
+			case SIGNALS.ENABLE_READY  :  this.onEnableReady();   break;
+			case SIGNALS.CLICK_TARGET  :  this.onClickTarget();   break;
+		}
+	}
+
+	onResetBoard() {
+	}
+
+	onStartPlacing() {
+	}
+
+	onEnableReady() {
+	}
+
+	onClickTarget() {
+	}
+
+}
+
+/*
 import { SETTINGS, OPTIONS, DEBUG, SHIP_DEFINITION } from './configuration.js';
 import { createDOMStructure } from './dom_structure.js';
 
@@ -297,7 +330,6 @@ export class UserInterface {
 	};
 
 	onKeyDown = (event) => {
-		/*eslint indent: [2, "tab", {"SwitchCase": 1}]*/ //TODO not sure how this works, also add to rc
 		switch (event.key) {
 			case 'i': {
 				document.body.classList.toggle('images');
@@ -321,5 +353,7 @@ export class UserInterface {
 	};
 
 }
+
+*/
 
 //EOF

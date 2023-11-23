@@ -3,8 +3,52 @@
 // Battleships - copy(l)eft 2023 - https://harald.ist.org/
 ///////////////////////////////////////////////////////////////////////////////////////////////100:/
 
-import { PROGRAM_NAME, PROGRAM_VERSION, SETTINGS, OPTIONS, DEBUG } from './configuration.js';
+import { PROGRAM_NAME, PROGRAM_VERSION, SETTINGS, OPTIONS, SIGNALS } from './configuration.js';
 
+import { MessageBroker } from './message_broker.js';
+import { UserInterface } from './user_interface.js';
+import { Player } from './player.js';
+import { Game } from './game.js';
+
+export class Application {
+	broker;
+
+	constructor () {
+		console.log( `%c${PROGRAM_NAME} v${PROGRAM_VERSION}`, 'color:green');
+		setTimeout( this.onBodyFadeIn, SETTINGS.BODY_FADE_TIME );
+	}
+
+	onBodyFadeIn = () => {
+		const broker = new MessageBroker();
+
+		new UserInterface(broker);
+
+		const player1 = new Player({
+			broker : broker,
+			name   : 'Alice',
+			type   : OPTIONS.PLAYER1_HUMAN ? 'human' : 'computer',
+			id     : 'player1',
+		});
+
+		const player2 = new Player({
+			broker : broker,
+			name   : 'Bob',
+			type   : OPTIONS.PLAYER1_HUMAN ? 'computer' : 'human',
+			id     : 'player2',
+		});
+
+		new Game({
+			broker  : broker,
+			player1 : player1,
+			player2 : player2,
+		});
+
+		broker.broadcast({ signal: SIGNALS.NEW_GAME });
+	};
+
+}
+
+/*
 import { UserInterface } from './user_interface.js';
 import { Player } from './player.js';
 import { Game } from './game.js';
@@ -103,9 +147,9 @@ export class Application {
 		this.ui.setClearEnabled(true);
 
 		if (player.nrShipsInYard === 0) {
-			this.ui.setGamePhase('waitready', /*canClearBoard*/true);
+			this.ui.setGamePhase('waitready', /*canClearBoard* /true);
 		} else {
-			this.ui.setGamePhase('deploy', /*canClearBoard*/true);
+			this.ui.setGamePhase('deploy', /*canClearBoard* /true);
 		}
 	};
 
@@ -154,5 +198,6 @@ export class Application {
 	};
 
 }
+*/
 
 //EOF
