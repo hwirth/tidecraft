@@ -1,13 +1,10 @@
 TODO
 ====
 [E] Drag from yard: Ship position different before and after moving the div to the table
-[ ] Introduce Board()
 [?] Ship: Sunk: Mark fields around it as "attacked"
-[ ] Ship: Sunk: Don't change color of TD, but of the div.ship (grid.player only, or when ships shown on opponent)
 [?] Ship: Show div/image in opponent grid, when sunk
 [E] Ship: Too long by 1px?
-[ ] AI: Find rest of ship, once a hit is landed
+[!] AI: Find rest of ship, once a hit is landed
 [E] Take hit: Counts down, when same cell hit twice
 [ ] README.md + screenshot
 [\] Allow dragging ship back to yard (for rotating)
-[!] Passing so many callbacks might be "subsribing to events", maybe use a real observer pattern.
