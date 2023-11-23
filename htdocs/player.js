@@ -72,7 +72,7 @@ export class Player {
 	}
 
 	moveShipsToYard = () => {
-		console.log( 'Player.moveShipsToYard:', this.name );
+		if (DEBUG.SHIPYARD)  console.log( 'Player.moveShipsToYard:', this.name );
 
 		this.grid = Array.from({ length: 10 }).map( ()=>{
 			return Array.from({ length: 10 }).map( ()=>{
@@ -219,6 +219,8 @@ export class Player {
 	};
 
 	debugGrid = (heading = '') => {
+		if (!DEBUG.GRIDS) return;
+
 		if (heading) heading = ': ' + heading;
 
 		console.group(

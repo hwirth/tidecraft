@@ -19,7 +19,7 @@ export class Application {
 	}
 
 	startNewGame = async() => {
-		console.log( 'Starting new game');
+		if (DEBUG.GAME_PHASE) console.log( 'Starting new game');
 
 		if (this.game) this.game.exit();
 		if (this.ui) await this.ui.exit();
