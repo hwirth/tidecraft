@@ -297,6 +297,7 @@ export class UserInterface {
 	};
 
 	onKeyDown = (event) => {
+		/*eslint indent: [2, "tab", {"SwitchCase": 1}]*/ //TODO not sure how this works, also add to rc
 		switch (event.key) {
 			case 'i': {
 				document.body.classList.toggle('images');

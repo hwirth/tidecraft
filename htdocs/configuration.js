@@ -10,10 +10,10 @@ const getSecondsAsMillis = (name) => Math.floor(parseFloat(getCssVar(name)) * 10
 export const PROGRAM_NAME = document.title;
 export const PROGRAM_VERSION = '2.0.9b';
 
-const DEV_SERVER = !true && (location.hostname != 'harald.ist.org');
+const DEV_SERVER = true && (location.hostname != 'harald.ist.org');
 
 export const DEBUG = {
-	REDUCED_NR_SHIPS : DEV_SERVER && DEV_SERVER && !false,   // Reduce amount of ships
+	REDUCED_NR_SHIPS : DEV_SERVER && !false,   // Reduce amount of ships
 	QUICK_ATTACK     : DEV_SERVER && !false,   // AI responds without delay
 	/* console.log()s: */
 	INSTANCES        : DEV_SERVER && !false,

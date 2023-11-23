@@ -214,6 +214,7 @@ export class Player {
 	aiAttack = () => {
 		const index = Math.floor( Math.random() * (this.notYetAttacked.length - 1) );
 		const coords = this.notYetAttacked[index];
+		this.rememberAttack(coords);
 		setTimeout( ()=>this.callback.aiAttackOpponent(coords), OPTIONS.AI_ATTACK_DELAY );
 	};
 
