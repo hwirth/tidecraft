@@ -3,6 +3,8 @@
 // Battleships - copy(l)eft 2023 - https://harald.ist.org/
 ///////////////////////////////////////////////////////////////////////////////////////////////100:/
 
+import { Enum } from './enum.js';
+
 const rootElement = getComputedStyle(document.documentElement);
 const getCssVar = (name) => rootElement.getPropertyValue(name);
 const getSecondsAsMillis = (name) => Math.floor(parseFloat(getCssVar(name)) * 1000);
@@ -34,6 +36,31 @@ export const SETTINGS = {
 	CALCULATE_FONT_SIZE : false,  // Don't rely on CSS vmin font size, attach onresize handler
 	ZOOM_FONT_VMIN      : parseFloat(getCssVar('--vmin-font-size')),
 };
+
+export const SIGNALS = Enum(
+	'RESET_GAME',
+	'RESET_BOARD',
+	'READY_TO_DEPLOY',
+	'DEPLOY_SHIP',
+	'START_PLACING',
+	'WAIT_READY',
+	'RESET_YARD',
+	'PLAYER_READY',
+	'SELECT_TARGET',
+	'CLICK_TARGET',
+	'TARGET_CHOSEN',
+	'PERFORM_ATTACK',
+	'RECEIVE_ATTACK',
+	'SHOW_ATTACK',
+	'ATTACK_SHOWN',
+	'CHECK_DEFEAT',
+	'STILL_ALIVE',
+	'I_AM_DEAD',
+	'YOU_LOSE',
+	'YOU_WIN',
+	'DISPLAY_DEFEAT',
+	'DISPLAY_VICTORY',
+);
 
 export const OPTIONS = {
 	ATTACK_CELL_TWICE : DEBUG.QUICK_ATTACK,
