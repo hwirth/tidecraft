@@ -8,34 +8,32 @@ export class MessageBroker {
 	subscribers = [];
 
 	constructor(wsURL) {
-		// Create websocket, connect, assign receive function:
+		// Create pretend websocket
 		this.websocket = { url: wsURL, onReceive: this.#onWsReceive };
 	}
 
 	subscribe = (onMessage, id = null) => {
-		this.subscribers.push({
-			id: id,
-			send: onMessage,
-		});
+		this.subscribers.push({ id: id, send: onMessage });
 	};
 
-	#onWsReceive = (message) => {
+	send = (message) => {
+		const json = JSON.stringify(message);
+		this.#wsSend(json);
+	};
+
+	#onWsReceive = (json) => {
+		const message = JSON.parse(json);
 		const allRecipients   = () => true;
 		const recipientWithId = recipient => recipient.id === message.id;
 		const addressedRecipients = (message.id) ? recipientWithId : allRecipients;
-
 		const sendMessage = recipient => recipient.onMessage(message);
 		this.subscribers.filter(addressedRecipients).forEach(sendMessage);
 	};
 
 	#wsSend = (message) => {
-		// Send to WS, future server will broadcast message to all clients
-		// message --> server --all-clients--> back to us -->
+		// Pretend to send to WS
+		// Future server will broadcast message back to all connected clients
 		this.#onWsReceive(message);
-	};
-
-	send = (message) => {
-		this.#wsSend(message);
 	};
 
 }
