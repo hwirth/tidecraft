@@ -150,12 +150,6 @@
 		vertical-align:top;
 		border: solid 1px #0004;
 		border-width: 0 0 1px 1px;
-		Xleft:-1px;
-		Xtop:-1px;
-		Xpadding-top: 1px;
-		/* transform: translate(-1px,-1px);
-		   ROFLBUG: When applied, it behaves as if z-index:-1; and is no longer clickable
-		*/
 	}
 	td:first-of-type {
 		border-width: 0 0 1px 0;
@@ -282,7 +276,6 @@
 		border: var(--ship-border);
 		box-shadow: 0 0 0 0 #fff0;
 		transition: box-shadow var(--ship-transition-time) linear;
-		Xoverflow: hidden;
 	}
 	.grid .ship {
 		margin:-1px -1px 0 0;
@@ -375,11 +368,6 @@
 		filter: var(--inactive-filter);
 	}
 
-	/* Allow TD background to be shown on top of cells */
-	.battle .ship {
-		Xz-index: -1;
-	}
-
 	body.images.battle {
 		background-color: var(--body-background-color);
 		background-image: url(images/battle.jpg);
@@ -392,6 +380,7 @@
 		background-color: var(--body-background-color);
 		background-image: url(images/defeat.jpg);
 	}
+
 
 	/* PHASE INDICATORS */
 
