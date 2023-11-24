@@ -1,0 +1,170 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Websocket test</title><script>
+
+	console.log('%cWebsocket Message Relay Test', 'color:green');
+
+	const configuration = {
+		wsURL: 'ws://127.0.0.1:8888/',
+	};
+
+	var elements, ws;
+
+	function setWsBodyClass(newClassName) {
+		const classNames = ['wsclose', 'wsopen', 'wssend', 'wserror'];
+		classNames.forEach((className) => {
+			document.documentElement.classList.toggle(className, className === newClassName);
+		});
+	}
+
+	function onConnectClick() {
+		ws = new WebSocket(configuration.wsURL + '?id=' + elements.browserId.value);
+
+		ws.addEventListener('error', onError);
+		ws.addEventListener('open', onOpen);
+		ws.addEventListener('close', onClose);
+		ws.addEventListener('message', onMessage);
+
+		function onOpen() {
+			console.log('ws.onOpen: Connected to', configuration.wsURL);
+			setWsBodyClass('wsopen');
+		}
+
+		function onClose() {
+			console.log('ws.onClose');
+			setWsBodyClass('wsclose');
+		}
+
+		function onError (error) {
+			console.log('ws.onError:', error);
+			ws.removeEventListener('close', onClose);
+			setWsBodyClass('wserror');
+		}
+
+		function onMessage(event) {
+			setWsBodyClass('wsopen');
+			console.log('ws.onMessage: data:', event.data)
+			const message = JSON.parse(event.data);
+			console.log('ws.onMessage:, message:', message);
+			const pre = document.createElement('pre');
+			pre.innerText = message.browserId + ': ' + message.text;
+			elements.output.appendChild(pre);
+		}
+
+		window.addEventListener('beforeunload', () => {
+			console.log('window.beforeunload');
+			ws.removeEventListener('close', onClose);
+			ws.close();
+			setWsBodyClass('wsclose');
+		});
+
+		elements.input.select();
+	}
+
+	function onDisconnectClick() {
+		ws.close();
+	}
+
+	function onSendClick() {
+		if (ws.readyState !== WebSocket.OPEN) {
+			console.log('onSendClick: ws.readyState != WebSeocket.OPEN:', ws.readyState);
+			return;
+		}
+
+		ws.send(JSON.stringify({
+			browserId : elements.browserId.value,
+			text      : elements.input.value,
+		}));
+
+		setWsBodyClass('wssend');
+		elements.input.select();
+	}
+
+	function onKeyDown(event) {
+		if (event.key == 'Enter') onSendClick();
+	}
+
+	addEventListener('load', ()=>{
+		const selectors = {
+			output       : '#output',
+			disconnect   : '#disconnect',
+			connect      : '#connect',
+			browserId    : '#browser_id',
+			input        : '#input',
+			send         : '#send',
+		};
+
+		elements = Object.entries(selectors).reduce((prev, [key, value]) => {
+			return {...prev, [key]: document.querySelector(value)};
+		}, {});
+
+		const urlParams = new URLSearchParams(window.location.search);
+		const browserId = urlParams.get('id') || Math.floor(1000 + Math.random() * 9000);
+
+		elements.disconnect.addEventListener('click', onDisconnectClick);
+		elements.connect   .addEventListener('click', onConnectClick);
+		elements.send      .addEventListener('click', onSendClick);
+		elements.input     .addEventListener('keydown', onKeyDown);
+		elements.browserId.value = browserId;
+
+		setWsBodyClass('wsclose');
+		//elements.connect.focus();
+		onConnectClick();
+		setTimeout(()=>{
+			elements.input.value = 'Testtext';
+			onSendClick();
+		}, 1000);
+	});
+
+</script><style>
+
+	* { margin:0; padding:0; box-sizing:border-box; }
+	html, body { height: 100%; }
+	html         { background:#888; }
+	html.wsclose { background:#888; }
+	html.wsopen  { background:#8a8; }
+	html.wssend  { background:#8f8; }
+	html.wserror { background:#a66; }
+	body {
+		padding:0.125em 0.5em 0.5em;
+		display:grid; gap:0.25em;
+		grid-template-areas:
+			"heading heading heading heading heading"
+			"output output output output output"
+			"disconnect connect browser_id input send"
+		;
+		grid-template-columns: min-content min-content 6em 1fr min-content;
+		grid-template-rows: min-content 1fr min-content;
+		font-family: sans-serif;
+	}
+
+	h1          { grid-area: heading; text-align: center; font-size:1.5em; }
+	#output     { grid-area: output; }
+	#disconnect { grid-area: disconnect; }
+	#connect    { grid-area: connect; }
+	#browser_id { grid-area: browser_id; text-align:center; }
+	#input      { grid-area: input; }
+	#send       { grid-area: send; }
+
+	body > :not(h1) {
+		border: solid 1px #000;
+		padding:2px 0.5em;
+		background: #fff;
+	}
+	body > button {
+		background: #ddd;
+	}
+
+	:focus {
+		outline: dashed 1px blue;
+	}
+
+</style></head><body>
+
+	<h1>Message Relay Test</h1>
+	<div    id="output"></div>
+	<button id="disconnect">Disconnect</button>
+	<button id="connect">Connect</button>
+	<input  id="browser_id" type="text">
+	<input  id="input" type="text">
+	<button id="send">Send</button>
+
+</body></html>
