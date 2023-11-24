@@ -1,0 +1,6 @@
+{
+	"port": 5500,
+	"root": "server",
+	"open": "index.html",
+	"https": false
+}
