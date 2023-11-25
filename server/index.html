@@ -1,116 +1,119 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Websocket test</title><script>
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Message Relay Test</title><script>
 
 	console.log('%cWebsocket Message Relay Test', 'color:green');
 
-	const configuration = {
-		wsURL: 'ws://127.0.0.1:8888/',
+	const WS_URL = 'wss://' + location.hostname + ':8888';
+
+	const SELECTORS = {
+		output     : '#output',
+		disconnect : '#disconnect',
+		connect    : '#connect',
+		sender     : '#sender',
+		input      : '#input',
+		submit     : '#submit',
 	};
 
-	var elements, ws;
+	const CLASS_NAMES = ['wsclose', 'wsopen', 'wssend', 'wserror'];
 
-	function setWsBodyClass(newClassName) {
-		const classNames = ['wsclose', 'wsopen', 'wssend', 'wserror'];
-		classNames.forEach((className) => {
-			document.documentElement.classList.toggle(className, className === newClassName);
+	var elements, webSocket;
+
+	function showStatus(newClassName) {
+		CLASS_NAMES.forEach((className) => {
+			document.body.classList.toggle(className, className === newClassName);
 		});
 	}
 
 	function onConnectClick() {
-		ws = new WebSocket(configuration.wsURL + '?id=' + elements.browserId.value);
+		console.log('Connecting to', WS_URL);
 
-		ws.addEventListener('error', onError);
-		ws.addEventListener('open', onOpen);
-		ws.addEventListener('close', onClose);
-		ws.addEventListener('message', onMessage);
+		webSocket = new WebSocket(WS_URL);   // + '/?id=' + elements.sender.value);
+
+		webSocket.addEventListener('error', onError);
+		webSocket.addEventListener('open', onOpen);
+		webSocket.addEventListener('close', onClose);
+		webSocket.addEventListener('message', onMessage);
 
 		function onOpen() {
-			console.log('ws.onOpen: Connected to', configuration.wsURL);
-			setWsBodyClass('wsopen');
+			console.log('webSocket.onOpen: Connected to', WS_URL);
+			showStatus('wsopen');
 		}
 
 		function onClose() {
-			console.log('ws.onClose');
-			setWsBodyClass('wsclose');
+			console.log('webSocket.onClose');
+			showStatus('wsclose');
 		}
 
 		function onError (error) {
-			console.log('ws.onError:', error);
-			ws.removeEventListener('close', onClose);
-			setWsBodyClass('wserror');
+			console.log('webSocket.onError:', error);
+			webSocket.removeEventListener('close', onClose);
+			showStatus('wserror');
 		}
 
 		function onMessage(event) {
-			setWsBodyClass('wsopen');
-			console.log('ws.onMessage: data:', event.data)
+			showStatus('wsopen');
+			console.log('webSocket.onMessage: data:', event.data)
 			const message = JSON.parse(event.data);
-			console.log('ws.onMessage:, message:', message);
+			console.log('webSocket.onMessage:, message:', message);
 			const pre = document.createElement('pre');
-			pre.innerText = message.browserId + ': ' + message.text;
+			pre.innerText = message.sender + ': ' + message.text;
 			elements.output.appendChild(pre);
+			elements.output.scrollTop = elements.output.clientHeight;
 		}
 
 		window.addEventListener('beforeunload', () => {
 			console.log('window.beforeunload');
-			ws.removeEventListener('close', onClose);
-			ws.close();
-			setWsBodyClass('wsclose');
+			webSocket.removeEventListener('close', onClose);
+			webSocket.close();
+			showStatus('wsclose');
 		});
 
 		elements.input.select();
 	}
 
 	function onDisconnectClick() {
-		ws.close();
+		webSocket.close();
 	}
 
-	function onSendClick() {
-		if (ws.readyState !== WebSocket.OPEN) {
-			console.log('onSendClick: ws.readyState != WebSeocket.OPEN:', ws.readyState);
+	function onSubmitClick() {
+		if (webSocket.readyState !== WebSocket.OPEN) {
+			console.log('onSubmitClick: webSocket.readyState != WebSeocket.OPEN:', webSocket.readyState);
 			return;
 		}
 
-		ws.send(JSON.stringify({
-			browserId : elements.browserId.value,
-			text      : elements.input.value,
+		webSocket.send(JSON.stringify({
+			sender : elements.sender.value,
+			text   : elements.input.value,
 		}));
 
-		setWsBodyClass('wssend');
+		showStatus('wssend');
 		elements.input.select();
 	}
 
 	function onKeyDown(event) {
-		if (event.key == 'Enter') onSendClick();
+		if (event.key == 'Enter') onSubmitClick();
 	}
 
 	addEventListener('load', ()=>{
-		const selectors = {
-			output       : '#output',
-			disconnect   : '#disconnect',
-			connect      : '#connect',
-			browserId    : '#browser_id',
-			input        : '#input',
-			send         : '#send',
-		};
-
-		elements = Object.entries(selectors).reduce((prev, [key, value]) => {
+		elements = Object.entries(SELECTORS).reduce((prev, [key, value]) => {
 			return {...prev, [key]: document.querySelector(value)};
 		}, {});
 
 		const urlParams = new URLSearchParams(window.location.search);
-		const browserId = urlParams.get('id') || Math.floor(1000 + Math.random() * 9000);
+		const sender = urlParams.get('sender') || Math.floor(1000 + Math.random() * 9000);
 
 		elements.disconnect.addEventListener('click', onDisconnectClick);
 		elements.connect   .addEventListener('click', onConnectClick);
-		elements.send      .addEventListener('click', onSendClick);
+		elements.submit    .addEventListener('click', onSubmitClick);
+		elements.sender    .addEventListener('keydown', onKeyDown);
 		elements.input     .addEventListener('keydown', onKeyDown);
-		elements.browserId.value = browserId;
+		elements.sender.value = sender;
 
-		setWsBodyClass('wsclose');
-		//elements.connect.focus();
+		showStatus('wsclose');
+
 		onConnectClick();
 		setTimeout(()=>{
 			elements.input.value = 'Testtext';
-			onSendClick();
+			onSubmitClick();
 		}, 1000);
 	});
 
@@ -118,31 +121,31 @@
 
 	* { margin:0; padding:0; box-sizing:border-box; }
 	html, body { height: 100%; }
-	html         { background:#888; }
-	html.wsclose { background:#888; }
-	html.wsopen  { background:#8a8; }
-	html.wssend  { background:#8f8; }
-	html.wserror { background:#a66; }
+	body         { background:#888; }
+	body.wsclose { background:#888; }
+	body.wsopen  { background:#8a8; }
+	body.wssend  { background:#8f8; }
+	body.wserror { background:#a66; }
 	body {
-		padding:0.125em 0.5em 0.5em;
 		display:grid; gap:0.25em;
 		grid-template-areas:
 			"heading heading heading heading heading"
 			"output output output output output"
-			"disconnect connect browser_id input send"
+			"disconnect connect sender input submit"
 		;
 		grid-template-columns: min-content min-content 6em 1fr min-content;
 		grid-template-rows: min-content 1fr min-content;
+		padding:0.25em 0.5em 0.5em;
 		font-family: sans-serif;
 	}
 
-	h1          { grid-area: heading; text-align: center; font-size:1.5em; }
-	#output     { grid-area: output; }
+	h1          { grid-area: heading; text-align: center; font-size:1.25em; }
+	#output     { grid-area: output; overflow-y: auto; }
 	#disconnect { grid-area: disconnect; }
 	#connect    { grid-area: connect; }
-	#browser_id { grid-area: browser_id; text-align:center; }
-	#input      { grid-area: input; }
-	#send       { grid-area: send; }
+	#sender     { grid-area: sender; text-align:center; }
+	#input      { grid-area: input; width:6em; min-width: 100%; }
+	#submit     { grid-area: submit; }
 
 	body > :not(h1) {
 		border: solid 1px #000;
@@ -154,7 +157,7 @@
 	}
 
 	:focus {
-		outline: dashed 1px blue;
+		outline: solid 2px black;
 	}
 
 </style></head><body>
@@ -163,8 +166,8 @@
 	<div    id="output"></div>
 	<button id="disconnect">Disconnect</button>
 	<button id="connect">Connect</button>
-	<input  id="browser_id" type="text">
+	<input  id="sender" type="text">
 	<input  id="input" type="text">
-	<button id="send">Send</button>
+	<button id="submit">Submit</button>
 
 </body></html>
