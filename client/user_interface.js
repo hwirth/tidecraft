@@ -1,59 +1,37 @@
 // user_interface.js
-///////////////////////////////////////////////////////////////////////////////////////////////100:/
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////119:/
 // Battleships - copy(l)eft 2023 - https://harald.ist.org/
-///////////////////////////////////////////////////////////////////////////////////////////////100:/
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////119:/
 
-import { SIGNALS } from './configuration.js';
+import { DEBUG, SETTINGS, OPTIONS } from './configuration.js';
+import { SIGNALS, ATTACK_RESULTS } from './configuration.js';
 import { createDOMStructure } from './dom_structure.js';
 
 export class UserInterface {
-	constructor({ broker }) {
-		broker.subscribe(this.onMessage.bind(this));
-		createDOMStructure();
-	}
+	broadcast;
+	userId;
+	canDeploy;
+	canAttack;
 
-	onMessage(message) {
-		switch (message.signal) {
-			case SIGNALS.RESET_BOARD   :  this.onResetBoard();    break;
-			case SIGNALS.START_PLACING :  this.onStartPlacing();  break;
-			case SIGNALS.ENABLE_READY  :  this.onEnableReady();   break;
-			case SIGNALS.CLICK_TARGET  :  this.onClickTarget();   break;
-		}
-	}
+	constructor({ messageBroker, shipDefinitions, playerId }) {
+		this.broadcast = messageBroker.subscribe({
+			sender: this, id: playerId, messageHandlers: {
+				[SIGNALS.RESET_BOARD]     : this.onResetBoard,
+				[SIGNALS.START_PLACING]   : this.onStartPlacing,
+				[SIGNALS.ACCEPT_DEPLOY]   : this.onAcceptDeploy,
+				[SIGNALS.REJECT_DEPLOY]   : this.onRejectDeploy,
+				[SIGNALS.ENABLE_READY]    : this.onEnableReady,
+				[SIGNALS.PLAYER_READY]    : this.onPlayerReady,
+				[SIGNALS.CURRENT_PLAYER]  : this.onCurrentPlayer,
+				[SIGNALS.CLICK_TARGET]    : this.onClickTarget,
+				[SIGNALS.ANNOUNCE_RESULT] : this.onAnnounceResult,
+				[SIGNALS.DISPLAY_DEFEAT]  : this.onDisplayDefeat,
+				[SIGNALS.DISPLAY_VICTORY] : this.onDisplayVictory,
+			},
+		});
 
-	onResetBoard() {
-	}
+		this.playerId = playerId;
 
-	onStartPlacing() {
-	}
-
-	onEnableReady() {
-	}
-
-	onClickTarget() {
-	}
-
-}
-
-/*
-import { SETTINGS, OPTIONS, DEBUG, SHIP_DEFINITION } from './configuration.js';
-import { createDOMStructure } from './dom_structure.js';
-
-let instanceNr = 0;
-
-export class UserInterface {
-	callback;
-	elements;
-
-	constructor(callbacks) {
-		instanceNr += 1;
-		if (DEBUG.INSTANCES) console.log(
-			'%cUserInterface init, instance nr.', 'color:magenta', instanceNr,
-		);
-
-		this.callback = callbacks;
-
-		document.body.classList.add('fade');
 		document.body.classList.toggle('images', SETTINGS.BACKGROUND_IMAGES);
 		document.body.classList.toggle('zoom', SETTINGS.FILL_SCREEN);
 
@@ -65,7 +43,7 @@ export class UserInterface {
 			}
 		});
 
-		createDOMStructure(SHIP_DEFINITION);
+		createDOMStructure(shipDefinitions);
 
 		const selectors = {
 			btnOrientation : '[name=orientation]',
@@ -81,6 +59,7 @@ export class UserInterface {
 			yardSlots      : 'ALL .yard li',
 			ships          : 'ALL div.ship',
 		};
+
 		this.elements = Object.entries( selectors ).reduce( (prev, [name, selector])=>{
 			return (
 				(selector.slice(0,3) === 'ALL')
@@ -89,167 +68,157 @@ export class UserInterface {
 			);
 		}, {});
 
+		this.setButtonsEnabled({
+			btnOrientation : true,
+			btnShipsToYard : false,
+			btnReady       : false,
+		});
+
 		this.elements.btnOrientation.addEventListener('mouseup', this.onOrientationClick);
-		this.elements.btnShipsToYard.addEventListener('mouseup', this.moveShipsToYard);
+		this.elements.btnShipsToYard.addEventListener('mouseup', this.onMoveShipsToYardClick);
 		this.elements.ships.forEach( (ship)=>{
 			ship.addEventListener('mousedown', this.onShipDragStart);
 		});
-		this.elements.btnReady    .addEventListener('mouseup', this.callback.playerReady);
-		this.elements.btnNewGame  .addEventListener('mouseup', this.callback.newGame);
+		this.elements.btnReady    .addEventListener('mouseup', this.onPlayerReadyClick);
+		this.elements.btnNewGame  .addEventListener('mouseup', this.onNewGameClick);
 		this.elements.opponentGrid.addEventListener('mouseup', this.onOpponentGridClick);
 		addEventListener('keydown', this.onKeyDown);
 
-		this.setCurrentAttacker(null);
+		this.setCurrentPlayer(null);
+		this.canDeploy = false;
+		this.canClickTarget = false;
 
 		document.body.classList.remove('fade');
+		setTimeout(()=>this.broadcast({ signal: SIGNALS.UI_READY }), SETTINGS.BODY_FADE_TIME);
 	}
 
-	exit = () => {
-		this.elements.btnOrientation.removeEventListener('mouseup', this.onOrientationClick);
-		this.elements.btnShipsToYard.removeEventListener('mouseup', this.moveShipsToYard);
-		this.elements.ships.forEach( (ship)=>{
-			ship.removeEventListener('mousedown', this.onShipDragStart);
+	/*eslint-disable-next-line indent*/
+// MESSAGES //////////////////////////////////////////////////////////////////////////////////////////////////////119:/
+
+	onResetBoard = () => {
+		this.setGamePhase('deploy');
+		this.setButtonsEnabled({
+			btnOrientation : true,
+			btnShipsToYard : false,
+			btnReady       : false,
 		});
-		this.elements.btnReady    .removeEventListener('mouseup', this.callback.playerReady);
-		this.elements.btnNewGame  .removeEventListener('mouseup', this.callback.newGame);
-		this.elements.opponentGrid.removeEventListener('mouseup', this.onOpponentGridClick);
-		removeEventListener('keydown', this.onKeyDown);
-
-		if (DEBUG.INSTANCES) console.log(
-			'%cUserInterface exit, instance nr.', 'color:#f00', instanceNr,
-		);
-
-		document.body.classList.add('fade');
-		return new Promise(done => setTimeout(done, SETTINGS.BODY_FADE_TIME*2));
+		this.moveShipsToYard();
+		this.broadcast({ signal: SIGNALS.READY_TO_DEPLOY, id: this.playerId });
 	};
 
-	enableElement = (element, enabled) => {
-		if (enabled) {
-			element.removeAttribute('disabled');
-		} else {
-			element.setAttribute('disabled', '');
-		}
+	onStartPlacing = () => {
+		this.canDeploy = true;
+		if (DEBUG.UI) console.log('UserInterface.onStartPlacing: canDeploy:', this.canDeploy);
 	};
 
-	setGamePhase = (phaseName, canClearBoard = false) => {
-		document.body.classList.remove('deploy', 'waitready', 'battle', 'defeat', 'victory');
-		document.body.classList.add(phaseName);
-		this.enableElement(this.elements.btnOrientation, phaseName === 'deploy');
-		this.enableElement(this.elements.btnShipsToYard, phaseName === 'deploy' || phaseName === 'waitready');
-		this.enableElement(this.elements.btnReady, phaseName == 'waitready');
-		this.setClearEnabled(canClearBoard);
-	};
-
-	setReadyEnabled = (enabled) => {
-		this.enableElement(this.elements.btnReady, enabled);
-	};
-
-	setClearEnabled = (enabled) => {
-		this.enableElement(this.elements.btnShipsToYard, enabled);
-	};
-
-	setCurrentAttacker = (className) => {
-		document.body.classList.toggle('player1', className === 'player1');
-		document.body.classList.toggle('player2', className === 'player2');
-	};
-
-	findCoords = (target) => {
-		const gridElement = target.closest('table');
-		const rowElements = gridElement.querySelectorAll('tr');
-
-		const targetRow = target.closest('tr');
-		const rowIndex = [...rowElements].indexOf(targetRow);
-
-		const cells = targetRow.querySelectorAll('td');
-		const cellIndex = [...cells].indexOf(target);
-
-		return { x:cellIndex, y:rowIndex };
-	};
-
-	findCell = (grid, coords) => {
-		const x = coords.x + 1;
-		const y = coords.y + 1;
-		const selector = `tr:nth-of-type(${y}) td:nth-of-type(${x})`;
-		const cell = grid.querySelector(selector);
-		return cell;
-	};
-
-	moveShipsToYard = () => {
-		const bySize = (a, b) => {
-			const squaresA = a.querySelectorAll('span').length;
-			const squaresB = b.querySelectorAll('span').length;
-			return (squaresA === squaresB) ? 0 : (squaresB - squaresA);
-		};
-		const sortedShips = [...this.elements.ships].toSorted( bySize );
-
-		sortedShips.forEach( (ship, index)=>{
-			ship.classList.remove('horizontal');
-			ship.classList.add('vertical');
-			const slot = this.elements.yardSlots[index];
+	onRejectDeploy = (message) => {
+		const ship = this.findShipById(message.shipId);
+		this.dragDropRelease(ship);
+		if (message.placement === null) {
+			const slot = this.findYardSlotById(message.shipId);
 			slot.appendChild(ship);
+			this.broadcast({ signal: SIGNALS.DEPLOY_DONE, id: this.playerId });
+		} else {
+			this.onAcceptDeploy(message);
+		}
+	};
+
+	onAcceptDeploy = (message) => {
+		const ship = this.findShipById(message.shipId);
+		this.dragDropRelease(ship);
+		const targetCell = this.findGridCell(this.elements.playerGrid, message.placement.coords);
+		targetCell.appendChild(ship);
+		this.setButtonsEnabled({ btnShipsToYard: true });
+		this.broadcast({ signal: SIGNALS.DEPLOY_DONE, id: this.playerId });
+	};
+
+	onEnableReady = () => {
+		this.setGamePhase('waitready');
+		this.setButtonsEnabled({
+			btnOrientation : false,
+			btnReady       : true,
 		});
-
-		this.elements.allCells.forEach(cell => cell.className = '');  //...? Still in use?
-		this.elements.yard.classList.remove('horizontal');
-		this.elements.yard.classList.add('vertical');
-		this.callback.clearBoard();
 	};
 
-
-	showAttackResult = ({coords, result, ship}) => {
-		const cell = this.findCell(this.elements.opponentGrid, coords);
-		cell.className = result;
-		if (ship) {
-			ship.cells.forEach((shipCoords)=>{
-				const cell = this.findCell(this.elements.opponentGrid, shipCoords);
-				this.animateAttack(cell, result);
-			});
-		}
+	onPlayerReady = (message) => {
+		if (message.id !== this.playerId) return;   //TODO refactor messages (This is also sent without id to Game)
+		this.setButtonsEnabled({
+			btnOrientation : false,
+			btnShipsToYard : false,
+			btnReady       : false,
+		});
+		this.canDeploy = false;
+		if (DEBUG.UI) console.log('UserInterface.onPlayerReady: canDeploy:', this.canDeploy);
 	};
 
-	showReceivedAttack = ({coords, result, ship}) => {
-		const cell = this.findCell(this.elements.playerGrid, coords);
-		cell.className = result;
-		if (DEBUG.ATTACKS) console.log('showReceivedAttack: ship:', ship);
-		if (ship) {
-			ship.cells.forEach((shipCoords)=>{
-				const cell = this.findCell(this.elements.playerGrid, shipCoords);
-				this.animateAttack(cell, result);
-			});
-		}
+	onCurrentPlayer = (message) => {
+		this.setGamePhase('battle');
+		this.setCurrentPlayer(message.currentPlayerId);
 	};
+
+	onClickTarget = () => {
+		this.canAttack = true;
+		if (DEBUG.UI) console.log('UserInterface.onClickTarget: canAttack:', this.canAttack);
+	};
+
+	onAnnounceResult = (message) => {
+		const table = (message.receiverId === this.playerId) ? this.elements.playerGrid : this.elements.opponentGrid;
+		const className = {
+			[ATTACK_RESULTS.MISS] : 'attacked',
+			[ATTACK_RESULTS.HIT]  : 'attacked hit',
+			[ATTACK_RESULTS.SUNK] : 'attacked hit sunk',
+		}[message.result];
+
+		const findCell = coords => this.findGridCell(table, coords);
+		const cells = message.coords.map(findCell);
+		cells.forEach(cell => cell.className = className);
+
+		this.canAttack = false;
+		if (DEBUG.UI) console.log('UserInterface.onClickTarget: canAttack:', this.canAttack);
+	};
+
+	onDisplayDefeat = () => {
+		this.setGamePhase('defeat');
+	};
+
+	onDisplayVictory = () => {
+		this.setGamePhase('victory');
+	};
+
+	/*eslint-disable-next-line indent*/
+// UI EVENTS /////////////////////////////////////////////////////////////////////////////////////////////////////119:/
 
 	onOrientationClick = () => {
-		[this.elements.yard, ...this.elements.ships].forEach(ship => {
-			if (ship.closest('.yard')) {
-				ship.classList.toggle('vertical');
-				ship.classList.toggle('horizontal');
-			}
-		});
+		if (!this.canDeploy) return;
+
+		function toggleOrientation(element) {
+			element.classList.toggle('vertical');
+			element.classList.toggle('horizontal');
+		}
+
+		toggleOrientation(this.elements.yard);
+
+		const inYard = ship => ship.closest('.yard') !== null;
+		[...this.elements.ships].filter(inYard).forEach(toggleOrientation);
+	};
+
+	onMoveShipsToYardClick = () => {
+		this.broadcast({ signal: SIGNALS.RESET_YARD, id: this.playerId });
 	};
 
 	onShipDragStart = (event) => {
-		if (!this.callback.dragShipsAllowed()) return;
+		if (!this.canDeploy) return;
 
-		const shipSquare = event.target;
-		if (shipSquare.tagName !== 'SPAN') return;
+		const shipCell = event.target;
+		if (shipCell.tagName !== 'SPAN') return;
 
-		const ship = shipSquare.closest('.ship');
+		const ship = shipCell.closest('.ship');
 		const yard = ship.closest('.yard') || ship.closest('table');
 		if (!ship || !yard || event.button !== 0) return;
 
-		const squares = ship.querySelectorAll('span');
-		const squareIndex = [...squares].indexOf(shipSquare);
-		const shipSize = squares.length;
+		const shipId      = parseInt(ship.dataset.shipId, 10);
+		const cellIndex   = shipCell.dataset.cellIndex;
 		const orientation = ship.classList.contains('vertical') ? 'vertical' : 'horizontal';
-
-		const grid = ship.closest('table.player');
-		let initialCoords = null;
-		if (grid) {
-			const cell = ship.closest('td');
-			initialCoords = this.findCoords(cell);
-			this.callback.removeShipAt(initialCoords);
-		}
 
 		const initialShipX = ship.offsetLeft;
 		const initialShipY = ship.offsetTop;
@@ -258,7 +227,6 @@ export class UserInterface {
 		const initialLayerX = event.layerX + 1; //TODO No idea, why it is offset.
 		const initialLayerY = event.layerY + 1; //TODO I guess because of table/td
 
-		// Needs to be arrow function, so we can access this, and remove the event listener See [1] below.
 		const onMouseMove = (event)=>{
 			const deltaX = event.screenX - initialMouseX;
 			const deltaY = event.screenY - initialMouseY;
@@ -274,86 +242,137 @@ export class UserInterface {
 		const onMouseUp = (event) => {
 			removeEventListener('mousemove', onMouseMove);
 			removeEventListener('mouseup', onMouseUp);
-			ship.style.left = '';
-			ship.style.top = '';
-			ship.classList.remove('dragged');
 
-			let allowed = false;
 			if ((event.target.tagName === 'TD') && event.target.closest('.player')) {
-				const dropCoords = this.findCoords(event.target);
+				const dropCoords = this.findGridCoords(event.target);
 
-				let adjustedCoords;
-				if (orientation === 'horizontal') {
-					adjustedCoords = {x: dropCoords.x - squareIndex, y: dropCoords.y};
-				} else {
-					adjustedCoords = {x: dropCoords.x, y: dropCoords.y - squareIndex};
-				}
+				const adjustedCoords = (orientation === 'horizontal')
+					? { x: dropCoords.x - cellIndex, y: dropCoords.y}
+					: { x: dropCoords.x, y: dropCoords.y - cellIndex}
+				;
 
-				allowed = this.callback.placementValid(adjustedCoords, shipSize, orientation);
-				if (allowed) {
-					const targetCell = this.findCell(this.elements.playerGrid, adjustedCoords);
-					targetCell.appendChild(ship);
-
-					// This might trigger the next game phase (battle):
-					this.callback.placeShip(adjustedCoords, shipSize, orientation);
-				}
-			}
-
-			if (!allowed && initialCoords) {
-				// Placement failed, and was already on the grid: Restore ship to original position
-				this.callback.placeShip(initialCoords, shipSize, orientation);
+				this.broadcast({
+					signal : SIGNALS.PLACE_SHIP,
+					id     : this.playerId,
+					shipId : shipId,
+					placement : {
+						coords : adjustedCoords,
+						orientation,
+					},
+				});
+			} else {
+				this.dragDropRelease(ship);
 			}
 		};
 
-		addEventListener('mousemove', onMouseMove); // [1] Cannot bind(this) here,
-		addEventListener('mouseup', onMouseUp);     // lest we can't remove the listener
+		addEventListener('mousemove', onMouseMove);
+		addEventListener('mouseup', onMouseUp);
 		ship.classList.add('dragged');
 	};
 
+	dragDropRelease = (ship) => {
+		ship.style.left = '';
+		ship.style.top = '';
+		ship.classList.remove('dragged');
+	};
+
+	onPlayerReadyClick = () => {
+		this.broadcast({ signal: SIGNALS.PLAYER_READY, id: this.playerId });   //TODO refactor messages (Goes to UI)
+		this.broadcast({ signal: SIGNALS.PLAYER_READY });                      //TODO Goes to Game
+	};
+
+	onNewGameClick = () => {
+		console.log('%cNot yet implemented', 'color:red');   //TODO
+	};
+
 	onOpponentGridClick = (event) => {
+		if (!this.canAttack) return;
+
 		const notLeftButton = (event.button !== 0);
 		const notACell = (event.target.tagName !== 'TD');
 		const alreadyAttacked = event.target.classList.contains('attacked') && !OPTIONS.ATTACK_CELL_TWICE;
 		if (notLeftButton || notACell || alreadyAttacked) return;
 
-		const coords = this.findCoords(event.target);
-		this.callback.attackOpponent(coords);
-	};
-
-	animateAttack = (cell, result) => {
-		if (result === 'attacked hit sunk') {
-			cell.className = 'attacked hit';
-			setTimeout( ()=>cell.className = result, SETTINGS.ANIMATE_ATTACK_TIME );
-		} else {
-			cell.className = result;
-		}
+		const coords = this.findGridCoords(event.target);
+		this.broadcast({ signal: SIGNALS.TARGET_CHOSEN, id: this.playerId, coords });
 	};
 
 	onKeyDown = (event) => {
-		switch (event.key) {
-			case 'i': {
-				document.body.classList.toggle('images');
-				break;
-			}
-			case 'z': {
-				document.body.classList.toggle('zoom');
-				break;
-			}
-			case '1': {
-				OPTIONS.PLAYER1_HUMAN = true;
-				console.log('Player 1: Human, player 2: Computer');
-				break;
-			}
-			case '2': {
-				OPTIONS.PLAYER1_HUMAN = false;
-				console.log('Player 1: Computer, player 2: Human');
-				break;
-			}
+		console.log(event);   //TODO
+	};
+
+	/*eslint-disable-next-line indent*/
+// PROCEDURES ////////////////////////////////////////////////////////////////////////////////////////////////////119:/
+
+	moveShipsToYard = () => {
+		const byId = (a, b) => (a.shipId === b.shipId) ? 0 : (b.shipId - a.shipId);
+		const sortedShips = [...this.elements.ships].toSorted(byId);
+
+		sortedShips.forEach((ship, index) => {
+			ship.classList.remove('horizontal');
+			ship.classList.add('vertical');
+			const slot = this.elements.yardSlots[index];
+			slot.appendChild(ship);
+		});
+
+		this.elements.allCells.forEach(cell => cell.className = '');  //...? Still in use? Maybe not when placing
+		this.elements.yard.classList.remove('horizontal');
+		this.elements.yard.classList.add('vertical');
+	};
+
+	findGridCell = (table, coords) => {
+		return table.querySelector(`[data-row="${coords.y}"] [data-column="${coords.x}"]`);
+	};
+
+	findGridCoords = (target) => {
+		return {
+			x: parseInt(target.closest('td').dataset.column, 10),
+			y: parseInt(target.closest('tr').dataset.row   , 10),
+		};
+	};
+
+	findYardSlotById = (slotId) => {
+		const index = parseInt(slotId, 10) - 1;
+		const slot = this.elements.yardSlots[index];
+		return slot;
+	};
+
+	findShipById = (shipId) => {
+		const withId = ship => ship.dataset.shipId === String(shipId);
+		const ship = [...this.elements.ships].find(withId);
+		return ship;
+	};
+
+	/*eslint-disable-next-line indent*/
+// DOM HELPERS ///////////////////////////////////////////////////////////////////////////////////////////////////119:/
+
+	enableElement = (element, enabled) => {
+		if (enabled) {
+			element.removeAttribute('disabled');
+		} else {
+			element.setAttribute('disabled', '');
 		}
 	};
 
-}
+	setButtonsEnabled = (buttons) => {
+		Object.entries(buttons).forEach(([button, enabled]) => {
+			this.enableElement(this.elements[button], enabled);
+		});
+	};
 
-*/
+	setGamePhase = (phaseName) => {
+		if (DEBUG.GAME_PHASES) console.log('UserInterface.setGamePhase:', phaseName);
+		document.body.classList.remove('deploy', 'waitready', 'battle', 'defeat', 'victory'); //TODO refactor (Use Enum)
+		document.body.classList.add(phaseName);
+	};
+
+	setCurrentPlayer = (currentPlayerId) => {
+		document.body.classList.remove('player1', 'player2');
+		if (currentPlayerId === null) return;
+		if (currentPlayerId === this.playerId) document.body.classList.add('player1');
+		if (currentPlayerId !== this.playerId) document.body.classList.add('player2');
+	};
+
+}
 
 //EOF

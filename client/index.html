@@ -1,6 +1,7 @@
 <!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>Supreme Tidecraft</title><script type="module">
 
 	import { Application } from './main.js'
+
 	addEventListener('load', ()=>{
 		window.APP = new Application();
 	});
@@ -39,13 +40,10 @@
 
 	* { margin:0; padding:0; box-sizing:border-box; }
 
-	#music_link {
-		position:absolute;
-		top:1em;
-		right:1em;
+	html, body {
+		height: 100%;
 	}
 
-	html, body { height:100%; }
 	body {
 		display: flex;
 		align-items: center;
@@ -62,7 +60,7 @@
 		font-size: calc(var(--vmin-font-size)); /* Round up */
 	}
 	body:not(.zoom) {
-		font-size:unset !important; /* Override JS-calculated font size */
+		font-size: unset !important; /* Override JS-calculated font size */
 	}
 	body.fade {
 		transform: scale(0,0);
@@ -73,17 +71,34 @@
 		background-size: cover;
 	}
 
+	#music_link {
+		position: absolute;
+		top: 1em;
+		right: 1em;
+	}
+
 	h1 {
 		font-size: var(--heading-font-size);
 		color:#000;
 		font-family: blackops, sans-serif;
-		text-shadow:0 0 5px #def;
+		text-shadow: 0 0 5px #def;
 	}
 	h2 {
 		font-size: 1.1em;
 		margin: 0.5em 0 -0.5em;
 		line-height: 1;
-		color:#fff8;
+		color: #fff8;
+	}
+	p {
+		--text-shadow: #fc04;
+		font-size: 1.5em;
+		font-weight: bold;
+		color: #000;
+		text-shadow:
+			-2px  0 var(--text-shadow),
+			 2px  0 var(--text-shadow),
+			 0 -2px var(--text-shadow),
+			 0  2px var(--text-shadow) ;
 	}
 
 
@@ -144,10 +159,10 @@
 		border-collapse: collapse;
 	}
 	td {
-		position:relative;
+		position: relative;
 		width: var(--cell-size);
 		height: var(--cell-size);
-		vertical-align:top;
+		vertical-align: top;
 		border: solid 1px #0004;
 		border-width: 0 0 1px 1px;
 	}
@@ -158,7 +173,7 @@
 		border-width: 0 0 1px 1px;
 	}
 	tr:last-of-type td {
-		border-width:0 0 0 1px;
+		border-width: 0 0 0 1px;
 	}
 	tr:last-of-type td:first-of-type {
 		border-width: 0;
@@ -168,18 +183,18 @@
 	/* ATTACK RESULTS */
 
 	.opponent td.sunk {
-		background-color:#0124;
+		background-color: #0124;
 	}
 
 	td.attacked::after {
-		content:'';
-		position:absolute;
+		content: '';
+		position: absolute;
 		z-index: 2;
 		top:50%; left:50%;
 		transform: translate(-50%,-50%);
 		width:20%; height:20%;
 		border-radius: 50%;
-		background-color:#fff;
+		background-color: #fff;
 		animation: var(--cell-marker-animation);
 	}
 
@@ -192,7 +207,7 @@
 	body.battle.player1 .opponent td:not(.attacked):hover::before,
 	body.battle.player1 .opponent td:not(.attacked):hover::after {
 		content: '';
-		position:absolute;
+		position: absolute;
 		z-index: 2;
 		top:50%; left:50%;
 		transform: translate(-50%,-50%) rotate(45deg);
@@ -225,8 +240,8 @@
 	/* Ship is unter water */
 	td.sunk::before,
 	td.sunk::after {
-		width:120%;
-		background-color:#000;
+		width: 120%;
+		background-color: #000;
 	}
 
 
@@ -240,10 +255,10 @@
 		gap: 0.5em;
 		height: calc(var(--cell-size) * 5.5);
 		padding: 0.5em;
-		position:relative;
+		position: relative;
 	}
 	.yard.vertical li {
-		width:2em;
+		width: 2em;
 		padding-top: 0.5em;
 	}
 	.yard.horizontal li {
@@ -278,17 +293,17 @@
 		transition: box-shadow var(--ship-transition-time) linear;
 	}
 	.grid .ship {
-		margin:-1px -1px 0 0;
+		margin: -1px -1px 0 0;
 	}
 	.ship.dragged {
 		--size1: calc(var(--cell-size) * 0.3);
 		--size2: calc(var(--cell-size) * 0.9);
 		pointer-events: none;
-		box-shadow:0 0 var(--size1) var(--size2) #fff4;
+		box-shadow: 0 0 var(--size1) var(--size2) #fff4;
 	}
 	.ship.horizontal {
 		height: var(--cell-size);
-		white-space:nowrap;
+		white-space: nowrap;
 	}
 	.ship > span {
 		width: var(--cell-size);
@@ -309,16 +324,16 @@
 	.ship.carrier,
 	.ship.cruiser,
 	.ship.destroyer {
-		border-radius:50% 50% 20% 20%;
+		border-radius: 50% 50% 20% 20%;
 	}
 	.ship.submarine {
-		border-radius:50% 0% 50% 0%;
+		border-radius: 50% 0% 50% 0%;
 	}
 
 	.ship.carrier.horizontal,
 	.ship.cruiser.horizontal,
 	.ship.destroyer.horizontal {
-		border-radius:20% 50% 50% 20%;
+		border-radius: 20% 50% 50% 20%;
 	}
 
 	.sunk .ship {
@@ -337,11 +352,11 @@
 		--shadow-color: #fff8;
 		--border-color: #fff;
 		background-color: #000a;
-		border:solid 2px #fff8;
-		border-radius:0.5em;
-		padding:0.5em 1.5em;
-		font-size:0.75em;
-		color:#fff;
+		border: solid 2px #fff8;
+		border-radius: 0.5em;
+		padding: 0.5em 1.5em;
+		font-size: 0.75em;
+		color: #fff;
 	}
 	button:focus {
 		outline: none; /* TODO We shouldn't kill focus, but game works with mouse only anyways */
@@ -349,12 +364,12 @@
 	button:hover:not(:disabled), button:active:focus {
 		outline: none;
 		border-color: var(--border-color);
-		box-shadow:0 0 5px 1px var(--shadow-color);
+		box-shadow: 0 0 5px 1px var(--shadow-color);
 	}
 	button:disabled {
 		--shadow-color: #aaa;
 		border-color: #444;
-		color:#444;
+		color: #444;
 	}
 
 
@@ -395,13 +410,17 @@
 		color: #fff8;
 	}
 	.waitready .yard::after { content: 'Get Ready'; }
-	.battle .yard::after { content: 'Fight'; }
-	.victory .yard::after { content: 'Victory'; }
-	.defeat .yard::after { content: 'Defeat'; }
+	.battle    .yard::after { content: 'Fight'; }
+	.victory   .yard::after { content: 'Victory'; }
+	.defeat    .yard::after { content: 'Defeat'; }
 
-</style></head><body>
+</style></head><body class="images">
 
 	<h1>Supreme Tidecraft</h1>
 	<p>Please enable Javascript</p>
+	<script>
+		document.body.classList.add('fade');
+		document.body.innerHTML = '';
+	</script>
 
 </body></html>

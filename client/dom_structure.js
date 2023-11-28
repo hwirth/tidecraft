@@ -1,7 +1,7 @@
 // dom_structure.js
-///////////////////////////////////////////////////////////////////////////////////////////////100:/
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////119:/
 // Battleships - copy(l)eft 2023 - https://harald.ist.org/
-///////////////////////////////////////////////////////////////////////////////////////////////100:/
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////119:/
 
 import { YOUTUBE_MUSIC_LINK } from './configuration.js';
 
@@ -23,10 +23,12 @@ function newElements(definitions) {
 }
 
 function newYard(shipDefinitions) {
+	let shipId = 0;
 	const shipElements = shipDefinitions.reduce( (prev, shipDefinition)=>{
-		const newSpan = () => newElements([{ tag: 'span' }])[0];
+		const newSpan = (_, index) => newElements([{ tag: 'span', 'data-cell-index': index }])[0];
 		const newShip = () => newElements([{
-			tag: 'div', class:'vertical ship ' + shipDefinition.type,
+			tag: 'div', class: 'vertical ship ' + shipDefinition.type,
+			'data-ship-id': ++shipId, 'data-ship-size': shipDefinition.size,
 			children: Array.from({ length: shipDefinition.size }).map(newSpan),
 		}])[0];
 		const newShips = Array.from({ length: shipDefinition.amount }).map(newShip);
@@ -52,7 +54,7 @@ function newGrid() {
 
 export function createDOMStructure(shipDefinitions) {
 	document.body.innerHTML = '';
-	document.body.append( ...newElements([
+	document.body.append(...newElements([
 		{ tag: 'h1', innerText: document.title },
 		{ tag: 'a', innerText: 'Music', id: 'music_link', target: 'supreme_music', href: YOUTUBE_MUSIC_LINK },
 		{ tag: 'div', class: 'board', children: newElements([

@@ -1,7 +1,7 @@
 // configuration.js
-///////////////////////////////////////////////////////////////////////////////////////////////100:/
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////119:/
 // Battleships - copy(l)eft 2023 - https://harald.ist.org/
-///////////////////////////////////////////////////////////////////////////////////////////////100:/
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////119:/
 
 import { Enum } from './enum.js';
 
@@ -12,29 +12,32 @@ const getSecondsAsMillis = (name) => Math.floor(parseFloat(getCssVar(name)) * 10
 export const PROGRAM_NAME = document.title;
 export const PROGRAM_VERSION = '2.0.9b';
 
-const DEV_SERVER = true && (location.hostname != 'harald.ist.org');
+const DEV_SERVER = (location.hostname === '127.0.0.1');
 
 export const DEBUG = {
-	REDUCED_NR_SHIPS : DEV_SERVER && !false,   // Reduce amount of ships
-	QUICK_ATTACK     : DEV_SERVER && !false,   // AI responds without delay
+	/* Options: */
+	REDUCED_NR_SHIPS    : DEV_SERVER || !false,   // Reduce amount of ships
+	QUICK_ATTACK        : DEV_SERVER && !false,   // AI responds without animation delay
+	STOP_AFTER_MESSAGES :(DEV_SERVER &&  false) ? 50 : null,   // MessageBroker: Stop relaying after amount
 	/* console.log()s: */
-	INSTANCES        : DEV_SERVER && !false,
-	SHIP_DEFINITION  : DEV_SERVER &&  false,
-	GRIDS            : DEV_SERVER && !false,
-	SHIPYARD         : DEV_SERVER &&  false,
-	PLACE_SHIPS      : DEV_SERVER &&  false,
-	GAME_PHASE       : DEV_SERVER && !false,
-	TURNS            : DEV_SERVER && !false,
-	ATTACKS          : DEV_SERVER &&  false,
+	UI                  : DEV_SERVER &&  false,
+	MESSAGES            : DEV_SERVER && !false,
+	GRIDS               : DEV_SERVER && !false,
+	CREATE_SHIPS        : DEV_SERVER &&  false,
+	PLACE_SHIPS         : DEV_SERVER &&  false,
+	GAME_PHASES         : DEV_SERVER &&  false,
+	TURNS               : DEV_SERVER && !false,
 };
 
 export const SETTINGS = {
+	ENUM_STORES_STRINGS : DEV_SERVER,
 	BODY_FADE_TIME      : 250,
 	ANIMATE_ATTACK_TIME : DEBUG.QUICK_ATTACK ? 0 : getSecondsAsMillis('--cell-marker-animation-time'),
 	BACKGROUND_IMAGES   : true,
 	FILL_SCREEN         : true,   // Use vmin based font size
 	CALCULATE_FONT_SIZE : false,  // Don't rely on CSS vmin font size, attach onresize handler
 	ZOOM_FONT_VMIN      : parseFloat(getCssVar('--vmin-font-size')),
+	GRID_SIZE           : 10,
 };
 
 export const OPTIONS = {
@@ -44,34 +47,48 @@ export const OPTIONS = {
 };
 
 export const SIGNALS = Enum(
+	'UI_READY',
 	'RESET_GAME',
 	'RESET_BOARD',
 	'READY_TO_DEPLOY',
 	'DEPLOY_SHIP',
 	'START_PLACING',
-	'WAIT_READY',
+	'PLACE_SHIP',
+	'ACCEPT_DEPLOY',
+	'REJECT_DEPLOY',
+	'DEPLOY_DONE',
 	'RESET_YARD',
+	'WAIT_READY',
+	'ENABLE_READY',
 	'PLAYER_READY',
+	'CURRENT_PLAYER',
 	'SELECT_TARGET',
 	'CLICK_TARGET',
 	'TARGET_CHOSEN',
 	'PERFORM_ATTACK',
 	'RECEIVE_ATTACK',
-	'SHOW_ATTACK',
-	'ATTACK_SHOWN',
-	'CHECK_DEFEAT',
+	'ANNOUNCE_RESULT',
 	'STILL_ALIVE',
 	'I_AM_DEAD',
-	'YOU_LOSE',
-	'YOU_WIN',
 	'DISPLAY_DEFEAT',
 	'DISPLAY_VICTORY',
+);
+
+export const PLAYER_TYPES = Enum(
+	'HUMAN',
+	'COMPUTER',
+	'REMOTE',
+);
+
+export const ATTACK_RESULTS = Enum(
+	'MISS',
+	'HIT',
+	'SUNK',
 );
 
 const SHIP_DEFINITION_REDUCED = [
 	{type:'carrier', amount: 1, size: 4},
 	{type:'cruiser', amount: 1, size: 3},
-	//{type:'submarine' , amount: 3, size: 1},
 ];
 const SHIP_DEFINITION_FULL = [
 	{type:'carrier'   , amount: 1, size: 4},
