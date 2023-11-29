@@ -2,5 +2,5 @@
 	"port": 5500,
 	"root": ".",
 	"open": "",
-	"https": false
+	"https": true
 }
