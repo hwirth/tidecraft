@@ -25,7 +25,9 @@ module.exports = {
 		'indent': [
 			'error',
 			'tab',
-			{ 'SwitchCase': 1 }
+			{
+				'SwitchCase': 1,
+			}
 		],
 		'linebreak-style': [
 			'error',
@@ -38,6 +40,9 @@ module.exports = {
 		'semi': [
 			'error',
 			'always'
+		],
+		'no-constant-condition': [
+			'off'
 		]
 	}
 };
