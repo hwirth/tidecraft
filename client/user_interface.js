@@ -4,7 +4,7 @@
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////119:/
 
 import { DEBUG, SETTINGS, OPTIONS } from './configuration.js';
-import { SIGNALS, ATTACK_RESULTS } from './configuration.js';
+import { SIGNALS, GAME_PHASES, ATTACK_RESULTS } from './configuration.js';
 import { createDOMStructure } from './dom_structure.js';
 
 export class UserInterface {
@@ -96,7 +96,7 @@ export class UserInterface {
 // MESSAGES //////////////////////////////////////////////////////////////////////////////////////////////////////119:/
 
 	onResetBoard = () => {
-		this.setGamePhase('deploy');
+		this.setGamePhase(GAME_PHASES.DEPLOY);
 		this.setButtonsEnabled({
 			btnOrientation : true,
 			btnShipsToYard : false,
@@ -104,6 +104,8 @@ export class UserInterface {
 		});
 		this.moveShipsToYard();
 		this.broadcast({ signal: SIGNALS.READY_TO_DEPLOY, id: this.playerId });
+		this.canDeploy = false;
+		this.canAttack = false;
 	};
 
 	onStartPlacing = () => {
@@ -133,7 +135,7 @@ export class UserInterface {
 	};
 
 	onEnableReady = () => {
-		this.setGamePhase('waitready');
+		this.setGamePhase(GAME_PHASES.WAIT_READY);
 		this.setButtonsEnabled({
 			btnOrientation : false,
 			btnReady       : true,
@@ -141,7 +143,16 @@ export class UserInterface {
 	};
 
 	onPlayerReady = (message) => {
+		if (message.playerId) {
+			this.setGamePhase(
+				message.playerId === this.playerId
+					? GAME_PHASES.WAIT_OPPONENT
+					: GAME_PHASES.OPPONENT_READY
+			);
+		}
+
 		if (message.id !== this.playerId) return;   //TODO refactor messages (This is also sent without id to Game)
+
 		this.setButtonsEnabled({
 			btnOrientation : false,
 			btnShipsToYard : false,
@@ -152,13 +163,13 @@ export class UserInterface {
 	};
 
 	onCurrentPlayer = (message) => {
-		this.setGamePhase('battle');
+		if (message.currentPlayerId !== null) this.setGamePhase(GAME_PHASES.BATTLE);
 		this.setCurrentPlayer(message.currentPlayerId);
 	};
 
 	onClickTarget = () => {
 		this.canAttack = true;
-		if (DEBUG.UI) console.log('UserInterface.onClickTarget: canAttack:', this.canAttack);
+		if (DEBUG.UI) console.log('UserInterface.onClickTarget: %ccanAttack:', 'color:green', this.canAttack);
 	};
 
 	onAnnounceResult = (message) => {
@@ -172,17 +183,14 @@ export class UserInterface {
 		const findCell = coords => this.findGridCell(table, coords);
 		const cells = message.coords.map(findCell);
 		cells.forEach(cell => cell.className = className);
-
-		this.canAttack = false;
-		if (DEBUG.UI) console.log('UserInterface.onClickTarget: canAttack:', this.canAttack);
 	};
 
 	onDisplayDefeat = () => {
-		this.setGamePhase('defeat');
+		this.setGamePhase(GAME_PHASES.DEFEAT);
 	};
 
 	onDisplayVictory = () => {
-		this.setGamePhase('victory');
+		this.setGamePhase(GAME_PHASES.VICTORY);
 	};
 
 	/*eslint-disable-next-line indent*/
@@ -251,16 +259,10 @@ export class UserInterface {
 					: { x: dropCoords.x, y: dropCoords.y - cellIndex}
 				;
 
-				this.broadcast({
-					signal : SIGNALS.PLACE_SHIP,
-					id     : this.playerId,
-					shipId : shipId,
-					placement : {
-						coords : adjustedCoords,
-						orientation,
-					},
-				});
-			} else {
+				const placement = { coords : adjustedCoords, orientation };
+				this.broadcast({ signal: SIGNALS.PLACE_SHIP, id: this.playerId, shipId, placement });
+			}
+			else {
 				this.dragDropRelease(ship);
 			}
 		};
@@ -277,16 +279,19 @@ export class UserInterface {
 	};
 
 	onPlayerReadyClick = () => {
-		this.broadcast({ signal: SIGNALS.PLAYER_READY, id: this.playerId });   //TODO refactor messages (Goes to UI)
-		this.broadcast({ signal: SIGNALS.PLAYER_READY });                      //TODO Goes to Game
+		this.broadcast({ signal: SIGNALS.PLAYER_READY, id: this.playerId });
+		this.broadcast({ signal: SIGNALS.PLAYER_READY, playerId: this.playerId });
 	};
 
 	onNewGameClick = () => {
-		console.log('%cNot yet implemented', 'color:red');   //TODO
+		this.broadcast({ signal: SIGNALS.RESET_GAME });
 	};
 
 	onOpponentGridClick = (event) => {
 		if (!this.canAttack) return;
+
+		this.canAttack = false;
+		if (DEBUG.UI) console.log('UserInterface.onOpponentGridClick: %ccanAttack:', 'color:red', this.canAttack);
 
 		const notLeftButton = (event.button !== 0);
 		const notACell = (event.target.tagName !== 'TD');
@@ -299,6 +304,12 @@ export class UserInterface {
 
 	onKeyDown = (event) => {
 		console.log(event);   //TODO
+		switch (event.key) {
+			case 'i': {
+				document.body.classList.toggle('images');
+				break;
+			}
+		}
 	};
 
 	/*eslint-disable-next-line indent*/
@@ -362,15 +373,16 @@ export class UserInterface {
 
 	setGamePhase = (phaseName) => {
 		if (DEBUG.GAME_PHASES) console.log('UserInterface.setGamePhase:', phaseName);
-		document.body.classList.remove('deploy', 'waitready', 'battle', 'defeat', 'victory'); //TODO refactor (Use Enum)
+		const phaseClassNames = Object.values(GAME_PHASES);
+		document.body.classList.remove(...phaseClassNames);
 		document.body.classList.add(phaseName);
 	};
 
 	setCurrentPlayer = (currentPlayerId) => {
-		document.body.classList.remove('player1', 'player2');
+		document.body.classList.remove('attacking', 'receiving');
 		if (currentPlayerId === null) return;
-		if (currentPlayerId === this.playerId) document.body.classList.add('player1');
-		if (currentPlayerId !== this.playerId) document.body.classList.add('player2');
+		if (currentPlayerId === this.playerId) document.body.classList.add('attacking');
+		if (currentPlayerId !== this.playerId) document.body.classList.add('receiving');
 	};
 
 }

@@ -21,7 +21,7 @@ export class Ship {
 		if (DEBUG.CREATE_SHIPS) console.log('new Ship():', { shipId, ...definition });
 	}
 
-	deploy = (coords, orientation) => {
+	deploy = ({ coords, orientation }) => {
 		const deltaX = (orientation === 'horizontal') ? 1 : 0;
 		const deltaY = (orientation === 'vertical') ? 1 : 0;
 
@@ -31,6 +31,7 @@ export class Ship {
 			wasHit: false,
 		}));
 
+		this.orientation = orientation;
 		this.deployed = true;
 	};
 

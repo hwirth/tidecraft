@@ -204,8 +204,8 @@
 	td.sunk::before,
 	td.sunk::after,
 	/* Target selection */
-	body.battle.player1 .opponent td:not(.attacked):hover::before,
-	body.battle.player1 .opponent td:not(.attacked):hover::after {
+	body.battle.attacking .opponent td:not(.attacked):hover::before,
+	body.battle.attacking .opponent td:not(.attacked):hover::after {
 		content: '';
 		position: absolute;
 		z-index: 2;
@@ -227,13 +227,13 @@
 	td.hit::after,
 	td.sunk::after,
 	/* Target selection */
-	body.battle.player1 .opponent td:not(.attacked):hover::after {
+	body.battle.attacking .opponent td:not(.attacked):hover::after {
 		transform: translate(-50%,-50%) rotate(-45deg);
 	}
 
 	/* White X while choosing target */
-	body.battle.player1 .opponent td:not(.attacked):hover::before,
-	body.battle.player1 .opponent td:not(.attacked):hover::after {
+	body.battle.attacking .opponent td:not(.attacked):hover::before,
+	body.battle.attacking .opponent td:not(.attacked):hover::after {
 		background-color: #fff;
 	}
 
@@ -379,10 +379,19 @@
 	.waitready .grid.opponent,
 	.waitready .yard,
 	.battle .grid.player,
-	.battle .yard {
+	.battle .yard,
+	.receiving .grid.opponent {
 		filter: var(--inactive-filter);
 	}
 
+	body.images.opponentready {
+		background-color: var(--body-background-color);
+		background-image: url(images/approaching.jpg);
+	}
+	body.images.waitopponent {
+		background-color: var(--body-background-color);
+		background-image: url(images/deploying.jpg);
+	}
 	body.images.battle {
 		background-color: var(--body-background-color);
 		background-image: url(images/battle.jpg);
@@ -396,9 +405,6 @@
 		background-image: url(images/defeat.jpg);
 	}
 
-
-	/* PHASE INDICATORS */
-
 	.yard::after {
 		content: 'Deploy';
 		position: absolute;
@@ -409,18 +415,63 @@
 		text-transform: uppercase;
 		color: #fff8;
 	}
-	.waitready .yard::after { content: 'Get Ready'; }
-	.battle    .yard::after { content: 'Fight'; }
-	.victory   .yard::after { content: 'Victory'; }
-	.defeat    .yard::after { content: 'Defeat'; }
+	.waitready     .yard::after { content: 'Get Ready'; }
+	.waitopponent  .yard::after { content: 'Wait for Opponent'; }
+	.opponentready .yard::after { content: 'Incoming'; }
+	.battle        .yard::after { content: 'Battle'; }
+	.victory       .yard::after { content: 'Victory'; }
+	.defeat        .yard::after { content: 'Defeat'; }
 
 </style></head><body class="images">
 
-	<h1>Supreme Tidecraft</h1>
-	<p>Please enable Javascript</p>
+	<section id="noscript">
+		<h1>Supreme Tidecraft</h1>
+		<p>Please enable Javascript</p>
+	</section>
 	<script>
 		document.body.classList.add('fade');
-		document.body.innerHTML = '';
+		document.querySelector('#noscript').remove();
 	</script>
+
+	<section id="mainmenu">
+		<h1>Supreme Tidecraft</h1>
+		<button class="local">Player vs. Computer</button>
+		<button class="lobby">Player vs. Player</button>
+	</section>
+
+	<section id="lobby" class="hidden">
+		<h1>Lobby</h1>
+		<div id="login">
+			<label>
+				<span>Choose a name:</span>
+				<input id="message" type="text" class="notavailable">
+			</label>
+			<button class="login">Accept</button>
+		</div>
+		<ul id="users">
+			<li>Alice</li>
+			<li>Bob</li>
+		</ul>
+		<ul id="games">
+			<li class="offering">Alice</li>
+			<li class="offering private">Bob</li>
+			<li class="playing">Clara</li>
+		</ul>
+		<div id="connect">
+			<input type="password">
+			<button class="host">Host Game</button>
+			<button class="join">Join Game</button>
+		</div>
+		<button class="back">Main Menu</button>
+	</section>
+
+	<section id="chat" class="hidden">
+		<div class="output"></div>
+		<input type="text">
+		<input type="submit">
+	</section>
+
+	<section id="gameboard">
+	</section>
 
 </body></html>

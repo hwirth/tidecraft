@@ -26,6 +26,8 @@ export class Player {
 		this.name            = name;
 		this.color           = color;
 
+		if (type === PLAYER_TYPES.REMOTE) return;
+
 		this.broadcast = messageBroker.subscribe({
 			sender: this, id: playerId, messageHandlers: {
 				[SIGNALS.RESET_GAME]      : this.onResetGame,
@@ -55,11 +57,12 @@ export class Player {
 		this.moveShipsToYard();
 
 		const signal = {
-			[PLAYER_TYPES.HUMAN]   : SIGNALS.RESET_BOARD,
-			[PLAYER_TYPES.COMPUTER]: SIGNALS.DEPLOY_SHIP,
+			[PLAYER_TYPES.HUMAN]    : SIGNALS.RESET_BOARD,
+			[PLAYER_TYPES.COMPUTER] : SIGNALS.DEPLOY_SHIP,
+			[PLAYER_TYPES.REMOTE]   : null,   //TODO Not needed, if we don't subscribe
 		}[this.type];
 
-		this.broadcast({ signal, id: this.playerId });
+		if (signal) this.broadcast({ signal, id: this.playerId });
 	};
 
 	onReadyToDeploy = () => {
@@ -74,15 +77,23 @@ export class Player {
 			}
 			case PLAYER_TYPES.COMPUTER: {
 				const { shipId, placement } = this.aiDeployShip();
-				this.broadcast({
-					signal: SIGNALS.PLACE_SHIP,
-					id    : this.playerId,
-					shipId,
-					placement,
-				});
+				setTimeout(() => {
+					this.broadcast({
+						signal: SIGNALS.PLACE_SHIP,
+						id    : this.playerId,
+						shipId,
+						placement,
+					});
+				}, SETTINGS.COMPUTER_PLACE_TIME);
+				break;
+			}
+			case PLAYER_TYPES.REMOTE: {   //TODO Not needed, if we don't subscribe
+				if (DEBUG.NETWORK) console.log('Player.onAcceptRejectDeploy: Player is remote:', this.playerId);
 				break;
 			}
 		}
+
+		if (DEBUG.GRIDS) this.debugGrid();
 	};
 
 	onPlaceShip = (message) => {
@@ -112,8 +123,19 @@ export class Player {
 	};
 
 	onAcceptRejectDeploy = () => {
-		if (this.type === PLAYER_TYPES.COMPUTER) {
-			this.broadcast({ signal: SIGNALS.DEPLOY_DONE, id: this.playerId });
+		switch (this.type) {
+			case PLAYER_TYPES.COMPUTER: {
+				this.broadcast({ signal: SIGNALS.DEPLOY_DONE, id: this.playerId });
+				break;
+			}
+			case PLAYER_TYPES.HUMAN: {
+				if (DEBUG.NETWORK) console.log('Player.onAcceptRejectDeploy: HUMAN does nothing');
+				break;
+			}
+			case PLAYER_TYPES.REMOTE: {   //TODO Not needed, if we don't subscribe
+				if (DEBUG.NETWORK) console.log('Player.onAcceptRejectDeploy: Player is remote:', this.playerId);
+				break;
+			}
 		}
 	};
 
@@ -140,14 +162,18 @@ export class Player {
 				break;
 			}
 			case PLAYER_TYPES.COMPUTER: {
-				this.broadcast({ signal: SIGNALS.PLAYER_READY });   //TODO refactor messages (Goes to Game)
+				this.broadcast({ signal: SIGNALS.PLAYER_READY, playerId: this.playerId });
+				break;
+			}
+			case PLAYER_TYPES.REMOTE: {   //TODO Not needed, if we don't subscribe
+				if (DEBUG.NETWORK) console.log('Player.onWaitRead: Player is remote:', this.playerId);
 				break;
 			}
 		}
 	};
 
 	onPlayerReady = () => {
-		this.deployingShips = true;
+		//TODO No longer needed? this.deployingShips = true;
 	};
 
 	onSelectTarget = () => {
@@ -163,14 +189,23 @@ export class Player {
 				}, OPTIONS.AI_ATTACK_DELAY);
 				break;
 			}
+			case PLAYER_TYPES.REMOTE: {   //TODO Not needed, if we don't subscribe
+				if (DEBUG.NETWORK) console.log('Player.onSelectTarget: Player is remote:', this.playerId);
+				break;
+			}
 		}
 	};
 
 	onTargetChosen = (message) => {
-		const notYetAttacked = OPTIONS.ATTACK_CELL_TWICE || this.wasNotYetAttacked(message.coords);
+		const notYetAttacked = this.wasNotYetAttacked(message.coords);
 
-		if (notYetAttacked) {
+		if (notYetAttacked || OPTIONS.ATTACK_CELL_TWICE) {
 			this.rememberAttack(message.coords);
+		}
+
+		if (this.type === PLAYER_TYPES.REMOTE) return;   //TODO Not needed, if we don't subscribe
+
+		if (notYetAttacked || OPTIONS.ATTACK_CELL_TWICE) {
 			this.broadcast({ signal: SIGNALS.PERFORM_ATTACK, attacker: this.playerId, coords: message.coords });
 		} else {
 			this.broadcast({ signal: SIGNALS.SELECT_TARGET, id: this.playerId });
@@ -178,9 +213,11 @@ export class Player {
 	};
 
 	onReceiveAttack = (message) => {
-		const coords = message.coords;
-		const result = this.receiveAttack(coords);
-		this.broadcast({ signal: SIGNALS.ANNOUNCE_RESULT, receiverId: this.playerId, ...result });
+		const { result, coords } = this.receiveAttack(message.coords);
+
+		if (this.type === PLAYER_TYPES.REMOTE) return;   //TODO Not needed, if we don't subscribe
+
+		this.broadcast({ signal: SIGNALS.ANNOUNCE_RESULT, receiverId: this.playerId, result, coords });
 
 		const signal = this.allShipsSunk() ? SIGNALS.I_AM_DEAD : SIGNALS.STILL_ALIVE;
 		this.broadcast({ signal });
@@ -246,7 +283,8 @@ export class Player {
 			console.groupEnd();
 		}
 
-		ship.deploy(coords, orientation);
+		ship.deploy({ coords, orientation });
+		console.log('DEPLOYED:', ship);
 
 		const deltaX = (orientation === 'horizontal') ? 1 : 0;
 		const deltaY = (orientation === 'vertical') ? 1 : 0;
@@ -263,6 +301,13 @@ export class Player {
 	removeShip = (shipId) => {
 		const ship = this.ships.find(ship => ship.shipId === shipId);
 
+		const orientation = ship.orientation;
+		const coords = ship.cells[0];
+
+		ship.cells.forEach(({x, y}) => this.grid[y][x].ship = null);
+		ship.recall();
+
+		/*
 		const coords = ship.cells[0];
 		const orientation = ship.orientation;
 
@@ -277,6 +322,7 @@ export class Player {
 		}
 
 		ship.deployed = false;
+		*/
 
 		if (DEBUG.GRIDS) this.debugGrid('Player.removeShip');
 
@@ -389,6 +435,7 @@ export class Player {
 
 	debugGrid = (heading = '') => {
 		if (!DEBUG.GRIDS) return;
+		if (this.type === PLAYER_TYPES.REMOTE) return;
 
 		if (heading) heading = ': ' + heading;
 
@@ -408,12 +455,8 @@ export class Player {
 				}
 			}).join('');
 
-			const attacks = row.map( (cell, colIndex)=>{
-				const found = this.notYetAttacked.find( (coords)=>{
-					return (coords.x === colIndex) && (coords.y === rowIndex);
-				});
-				return (found) ? ' · ' : ' ~ ';
-			}).join('');
+			const attackedIndicator = (_, colIndex) => this.wasNotYetAttacked({ x: colIndex, y: rowIndex }) ? ' · ' : ' ~ ';
+			const attacks = row.map(attackedIndicator).join('');
 
 			console.log(rowIndex, player, '  ', rowIndex, attacks);
 		});

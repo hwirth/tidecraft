@@ -7,6 +7,7 @@ import { DEBUG, SIGNALS } from './configuration.js';
 
 export class Game {
 	broadcast;
+	isGameMaster;
 	player1;
 	player2;
 	nrReadyPlayers;
@@ -22,8 +23,8 @@ export class Game {
 				[SIGNALS.I_AM_DEAD]      :  this.onIAmDead,
 			},
 		});
-		this.player1 = player1;
-		this.player2 = player2;
+		this.player1      = player1;
+		this.player2      = player2;
 	}
 
 	/*eslint-disable-next-line indent*/

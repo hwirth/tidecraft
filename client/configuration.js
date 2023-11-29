@@ -3,11 +3,12 @@
 // Battleships - copy(l)eft 2023 - https://harald.ist.org/
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////119:/
 
-import { Enum } from './enum.js';
+import { Const, Enum } from './enum.js';
 
 const rootElement = getComputedStyle(document.documentElement);
 const getCssVar = (name) => rootElement.getPropertyValue(name);
 const getSecondsAsMillis = (name) => Math.floor(parseFloat(getCssVar(name)) * 1000);
+const queryParams = new URLSearchParams(window.location.search.slice(1));
 
 export const PROGRAM_NAME = document.title;
 export const PROGRAM_VERSION = '2.0.9b';
@@ -16,34 +17,38 @@ const DEV_SERVER = (location.hostname === '127.0.0.1');
 
 export const DEBUG = {
 	/* Options: */
-	REDUCED_NR_SHIPS    : DEV_SERVER || !false,   // Reduce amount of ships
+	REDUCED_NR_SHIPS    : DEV_SERVER && !false,   // Reduce amount of ships
 	QUICK_ATTACK        : DEV_SERVER && !false,   // AI responds without animation delay
 	STOP_AFTER_MESSAGES :(DEV_SERVER &&  false) ? 50 : null,   // MessageBroker: Stop relaying after amount
 	/* console.log()s: */
-	UI                  : DEV_SERVER &&  false,
+	UI                  : DEV_SERVER && !false,
 	MESSAGES            : DEV_SERVER && !false,
 	GRIDS               : DEV_SERVER && !false,
 	CREATE_SHIPS        : DEV_SERVER &&  false,
 	PLACE_SHIPS         : DEV_SERVER &&  false,
 	GAME_PHASES         : DEV_SERVER &&  false,
 	TURNS               : DEV_SERVER && !false,
+	NETWORK             : DEV_SERVER && !false,
 };
 
 export const SETTINGS = {
 	ENUM_STORES_STRINGS : DEV_SERVER,
 	BODY_FADE_TIME      : 250,
 	ANIMATE_ATTACK_TIME : DEBUG.QUICK_ATTACK ? 0 : getSecondsAsMillis('--cell-marker-animation-time'),
+	COMPUTER_PLACE_TIME : 333,
 	BACKGROUND_IMAGES   : true,
 	FILL_SCREEN         : true,   // Use vmin based font size
 	CALCULATE_FONT_SIZE : false,  // Don't rely on CSS vmin font size, attach onresize handler
 	ZOOM_FONT_VMIN      : parseFloat(getCssVar('--vmin-font-size')),
 	GRID_SIZE           : 10,
+	WEBSOCKET_URL       : 'wss://' + location.hostname + ':8888',
 };
 
 export const OPTIONS = {
 	ATTACK_CELL_TWICE : DEBUG.QUICK_ATTACK,
 	AI_ATTACK_DELAY   : DEBUG.QUICK_ATTACK ? 0 : SETTINGS.ANIMATE_ATTACK_TIME*2,
-	PLAYER1_HUMAN     : true,
+	PLAYER1_HUMAN     : queryParams.get('playerNr') === '1' || !queryParams.get('playerNr'),
+	REMOTE_OPPONENT   : queryParams.get('playerNr') !== null,
 };
 
 export const SIGNALS = Enum(
@@ -85,6 +90,16 @@ export const ATTACK_RESULTS = Enum(
 	'HIT',
 	'SUNK',
 );
+
+export const GAME_PHASES = Const({
+	DEPLOY         : 'deploy',
+	WAIT_READY     : 'waitready',
+	OPPONENT_READY : 'opponentready',
+	WAIT_OPPONENT  : 'waitopponent',
+	BATTLE         : 'battle',
+	DEFEAT         : 'defeat',
+	VICTORY        : 'victory',
+});
 
 const SHIP_DEFINITION_REDUCED = [
 	{type:'carrier', amount: 1, size: 4},

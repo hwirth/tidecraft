@@ -3,21 +3,42 @@
 // Battleships - copy(l)eft 2023 - https://harald.ist.org/
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////119:/
 
-import { DEBUG } from './configuration.js';
+import { DEBUG, SETTINGS } from './configuration.js';
 
 let messageCount = DEBUG.STOP_AFTER_MESSAGES;
 
 export class MessageBroker {
-	websocket;
+	webSocket   = null;
+	online      = false;
+	sessionId   = null;
 	subscribers = [];
 
-	constructor(wsURL) {
-		// Create pretend websocket
-		this.websocket = { url: wsURL };
+	constructor(networked = false) {
+		return new Promise((done) => {
+			const finalize = (event = null) => {
+				if (event) {
+					this.online = (event.type === 'open');
+					this.webSocket.removeEventListener('error', finalize);
+					this.webSocket.addEventListener('error', this.#onWsError);
+				}
+				done(this);
+			};
+
+			if (networked) {
+				if (DEBUG.NETWORK) console.log('MessageBroker: Connecting to', SETTINGS.WEBSOCKET_URL);
+				this.webSocket = new WebSocket(SETTINGS.WEBSOCKET_URL);
+				this.webSocket.addEventListener('open', finalize);
+				this.webSocket.addEventListener('error', finalize);
+				this.webSocket.addEventListener('message', (event) => this.#onWsReceive(event.data));
+			}
+			else {
+				finalize(null);
+			}
+		});
 	}
 
 	subscribe = ({ sender, messageHandlers, id = null }) => {
-		//TODO const onMessage = (message) => messageHandlers[message.signal](message);
+		//TODO const onMessage = (message) => messageHandlers[message.signal]({ sessionId: this.sessionId, ...message });
 		const onMessage = (message) => {
 			const handler = messageHandlers[message.signal];
 			if (handler) {
@@ -50,26 +71,30 @@ export class MessageBroker {
 		return this.#wsSend;
 	};
 
-	/*eslint-disable indent*/
 	#wsSend = (message) => {
-setTimeout(()=>{
-		/*TODO
-		// Pretend to send to WS
-		// Future server will broadcast message back to all connected clients
 		const json = JSON.stringify(message);
-		websocket.send(json);
+
+		if (this.online) {
+			this.webSocket.send(json);
+		} else {
+			setTimeout(()=>this.#onWsReceive(json));
+		}
 	};
-	#onWsReceive = (json) => {
+
+	#onWsReceive = (data, isBinary = false) => {
+		const json = (isBinary) ? data : data.toString();
 		const message = JSON.parse(json);
-		*/
+
 		const allRecipients   = () => true;
 		const recipientWithId = subscriber => subscriber.id === message.id;
 		const addressedRecipients = (message.id) ? recipientWithId : allRecipients;
 		const sendMessage = subscriber => subscriber.send(message);
 		this.subscribers.filter(addressedRecipients).forEach(sendMessage);
-});
 	};
-	/*eslint-enable indent*/
+
+	#onWsError = (error) => {
+		throw error;
+	};
 
 }
 
