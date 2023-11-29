@@ -1,7 +1,7 @@
 // server.js
-///////////////////////////////////////////////////////////////////////////////////////////////100:/
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////119:/
 // Battleships - copy(l)eft 2023 - https://harald.ist.org/
-///////////////////////////////////////////////////////////////////////////////////////////////100:/
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////119:/
 
 // cd secrets
 // C:\"Program Files"\Git\usr\bin\openssl.exe req -newkey rsa:2048 -nodes -keyout key.pem -x509 -days 365 -out cert.pem
@@ -15,7 +15,7 @@ import * as https from 'https';
 import * as ws    from 'ws';
 
 const SERVE_DOCUMENTS = !false;
-const DOCUMENT_ROOT = '../server';   // No trailing slash!
+const DOCUMENT_ROOT = '../client';   // No trailing slash!
 
 const HTTP_OPTIONS = {
 	port : 8888,
@@ -45,7 +45,7 @@ const MIME_TYPES = {
 };
 
 
-// WEB SOCKET /////////////////////////////////////////////////////////////////////////////////100:/
+// WEB SOCKET ////////////////////////////////////////////////////////////////////////////////////////////////////119:/
 
 const clients = {};
 const webSocketServer = new ws.WebSocketServer({ noServer: true });
@@ -76,6 +76,12 @@ webSocketServer.on('connection', (webSocket, request)=>{
 
 		Object.keys(clients).forEach((id) => {
 			if (clients[id].readyState === webSocket.OPEN) {
+				console.log(
+					clientAddress, clientPort, '-->',
+					clients[id]._socket.remoteAddress,
+					clients[id]._socket.remotePort,
+					JSON.parse(message, null, '\t'),
+				);
 				clients[id].send(message);
 			}
 		});
@@ -102,7 +108,7 @@ webSocketServer.on('close', ()=>{
 });
 
 
-// HTTP SERVER ////////////////////////////////////////////////////////////////////////////////100:/
+// HTTP SERVER ///////////////////////////////////////////////////////////////////////////////////////////////////119:/
 
 function getMimeType(fileName) {
 	const pos = fileName.lastIndexOf('.');
@@ -124,10 +130,10 @@ function fileAvailable(fileName) {
 function isValid(url) {
 	const allowedChars = 'abcdefghijklmnopqrstuvwxyz1234567890/._-';
 	const validChar = (prev, char) => prev && allowedChars.indexOf(char.toLowerCase()) >= 0;
-	const allCharsValid = url.split().reduce(validChar, true);
+	const allCharsValid = url.split('').reduce(validChar, true);
 	const noDoubleDot   = url.indexOf('..') < 0;
 	const leadingSlash  = url[0] === '/';
-	return true || allCharsValid && leadingSlash && noDoubleDot;
+	return allCharsValid && leadingSlash && noDoubleDot;
 }
 
 const server = https.createServer(HTTP_OPTIONS, (request, response)=>{
@@ -183,7 +189,7 @@ server.listen(HTTP_OPTIONS.port, ()=>{
 });
 
 
-///////////////////////////////////////////////////////////////////////////////////////////////100:/
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////119:/
 
 console.log('-'.repeat(80));
 
