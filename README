@@ -1,10 +1,21 @@
 TODO
 ====
+[ ] isGameMaster --> isGameHost
+[?] player1, player2 --> host, guest
+[ ] onConnectionLost --> AI takes over (Need to re-enable player checks I removed)
+[ ] .opponentready - change background when other player clicked ready
+[ ] Show game screen only, when both players are connected
+[?] body.images --> body.background_images
+[?] Bgimages fade into each other --> ::before instead of background-image
+[!] Refactor to use from/to in messages
 [E] Drag from yard: Ship position different before and after moving the div to the table
 [?] Ship: Sunk: Mark fields around it as "attacked"
 [?] Ship: Show div/image in opponent grid, when sunk
 [E] Ship: Too long by 1px?
 [!] AI: Find rest of ship, once a hit is landed
-[E] Take hit: Counts down, when same cell hit twice
 [ ] README.md + screenshot
 [\] Allow dragging ship back to yard (for rotating)
+
+REFACTOR MESSAGES
+=================
+message.id --> message.recipient(s)
