@@ -6,10 +6,12 @@
 import { DEBUG, SETTINGS, OPTIONS } from './configuration.js';
 import { SIGNALS, GAME_PHASES, ATTACK_RESULTS } from './configuration.js';
 import { createDOMStructure } from './dom_structure.js';
+import { Sounds } from './sounds.js';
 
 export class UserInterface {
 	broadcast;
 	userId;
+	sounds;
 	canDeploy;
 	canAttack;
 
@@ -32,9 +34,10 @@ export class UserInterface {
 
 		this.playerId = playerId;
 
-		document.body.classList.toggle('images', SETTINGS.BACKGROUND_IMAGES);
-		document.body.classList.toggle('zoom', SETTINGS.FILL_SCREEN);
+		this.init(shipDefinitions);  // Dispatch async init
+	}
 
+	init = async(shipDefinitions) => {
 		if (SETTINGS.CALCULATE_FONT_SIZE) addEventListener('resize', ()=>{
 			if (SETTINGS.FILL_SCREEN) {
 				const vmin = Math.min( window.innerHeight, window.innerWidth );
@@ -88,9 +91,14 @@ export class UserInterface {
 		this.canDeploy = false;
 		this.canClickTarget = false;
 
+		document.body.classList.toggle('images', SETTINGS.BACKGROUND_IMAGES);
+		document.body.classList.toggle('zoom', SETTINGS.FILL_SCREEN);
+
+		this.sounds = await new Sounds();
+
 		document.body.classList.remove('fade');
 		setTimeout(()=>this.broadcast({ signal: SIGNALS.UI_READY }), SETTINGS.BODY_FADE_TIME);
-	}
+	};
 
 	/*eslint-disable-next-line indent*/
 // MESSAGES //////////////////////////////////////////////////////////////////////////////////////////////////////119:/
@@ -183,6 +191,8 @@ export class UserInterface {
 		const findCell = coords => this.findGridCell(table, coords);
 		const cells = message.coords.map(findCell);
 		cells.forEach(cell => cell.className = className);
+
+		this.sounds.play(message.result);
 	};
 
 	onDisplayDefeat = () => {

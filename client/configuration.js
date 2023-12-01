@@ -18,7 +18,7 @@ const DEV_SERVER = (location.hostname === '127.0.0.1');
 export const DEBUG = {
 	/* Options: */
 	REDUCED_NR_SHIPS    : DEV_SERVER && !false,   // Reduce amount of ships
-	QUICK_ATTACK        : DEV_SERVER && !false,   // AI responds without animation delay
+	QUICK_ATTACK        : DEV_SERVER &&  false,   // AI responds without animation delay
 	STOP_AFTER_MESSAGES :(DEV_SERVER &&  false) ? 50 : null,   // MessageBroker: Stop relaying after amount
 	/* console.log()s: */
 	UI                  : DEV_SERVER && !false,
@@ -32,7 +32,7 @@ export const DEBUG = {
 };
 
 export const SETTINGS = {
-	ENUM_STORES_STRINGS : DEV_SERVER,
+	ENUM_STORES_STRINGS : DEV_SERVER || !false,
 	BODY_FADE_TIME      : 250,
 	ANIMATE_ATTACK_TIME : DEBUG.QUICK_ATTACK ? 0 : getSecondsAsMillis('--cell-marker-animation-time'),
 	COMPUTER_PLACE_TIME : 333,
@@ -46,7 +46,7 @@ export const SETTINGS = {
 
 export const OPTIONS = {
 	ATTACK_CELL_TWICE : DEBUG.QUICK_ATTACK,
-	AI_ATTACK_DELAY   : DEBUG.QUICK_ATTACK ? 0 : SETTINGS.ANIMATE_ATTACK_TIME*2,
+	AI_ATTACK_DELAY   : DEBUG.QUICK_ATTACK ? 0 : SETTINGS.ANIMATE_ATTACK_TIME * 2 + 333,
 	PLAYER1_HUMAN     : queryParams.get('playerNr') === '1' || !queryParams.get('playerNr'),
 	REMOTE_OPPONENT   : queryParams.get('playerNr') !== null,
 };
@@ -91,6 +91,12 @@ export const ATTACK_RESULTS = Enum(
 	'SUNK',
 );
 
+export const SOUND_DEFINITIONS = {
+	[ATTACK_RESULTS.MISS] : { fileName: 'sounds/miss.mp3', volume: 0.1 },
+	[ATTACK_RESULTS.HIT]  : { fileName: 'sounds/hit.mp3' , volume: 0.7 },
+	[ATTACK_RESULTS.SUNK] : { fileName: 'sounds/sunk.mp3', volume: 1 },
+};
+
 export const GAME_PHASES = Const({
 	DEPLOY         : 'deploy',
 	WAIT_READY     : 'waitready',
@@ -101,18 +107,16 @@ export const GAME_PHASES = Const({
 	VICTORY        : 'victory',
 });
 
-const SHIP_DEFINITION_REDUCED = [
-	{type:'carrier', amount: 1, size: 4},
-	{type:'cruiser', amount: 1, size: 3},
-];
-const SHIP_DEFINITION_FULL = [
-	{type:'carrier'   , amount: 1, size: 4},
-	{type:'cruiser'   , amount: 2, size: 3},
-	{type:'destroyer' , amount: 3, size: 2},
-	{type:'submarine' , amount: 4, size: 1},
-];
-
-export const SHIP_DEFINITION = DEBUG.REDUCED_NR_SHIPS ? SHIP_DEFINITION_REDUCED : SHIP_DEFINITION_FULL;
+export const SHIP_DEFINITION = DEBUG.REDUCED_NR_SHIPS
+	? [
+		{type:'carrier', amount: 1, size: 4},
+		{type:'cruiser', amount: 1, size: 3},
+	]:[
+		{type:'carrier'  , amount: 1, size: 4},
+		{type:'cruiser'  , amount: 2, size: 3},
+		{type:'destroyer', amount: 3, size: 2},
+		{type:'submarine', amount: 4, size: 1},
+	];
 
 export const YOUTUBE_MUSIC_LINK = 'https://www.youtube.com/watch?v=hFpB1EjOBSE&list=PL32CA0E2B242C8D32';
 
