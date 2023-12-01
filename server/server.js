@@ -42,6 +42,9 @@ const MIME_TYPES = {
 	ico    : 'image/x-icon',
 	woff   : 'font/woff',
 	woff2  : 'font/woff2',
+	wav    : 'audio/wav',
+	mp3    : 'audio/mpeg',
+	ogg    : 'audio/ogg',
 };
 
 
@@ -72,18 +75,16 @@ webSocketServer.on('connection', (webSocket, request)=>{
 
 	webSocket.on('message', (data, isBinary) => {
 		const message = (isBinary) ? data : data.toString();
-		console.log(clientAddress, clientPort, 'MESSAGE', message);
+		console.log(clientAddress, clientPort, 'MESSAGE\n', JSON.parse(message, null, '\t'));
 
-		Object.keys(clients).forEach((id) => {
-			if (clients[id].readyState === webSocket.OPEN) {
-				console.log(
-					clientAddress, clientPort, '-->',
-					clients[id]._socket.remoteAddress,
-					clients[id]._socket.remotePort,
-					JSON.parse(message, null, '\t'),
-				);
-				clients[id].send(message);
-			}
+		const stillConnected = client => client.readyState === webSocket.OPEN;
+		Object.values(clients).filter(stillConnected).forEach((client) => {
+			console.log(
+				clientAddress, clientPort, '-->',
+				client._socket.remoteAddress,
+				client._socket.remotePort,
+			);
+			client.send(message);
 		});
 	});
 
