@@ -35,7 +35,7 @@ export const SETTINGS = {
 	ENUM_STORES_STRINGS : DEV_SERVER || !false,
 	BODY_FADE_TIME      : 250,
 	ANIMATE_ATTACK_TIME : DEBUG.QUICK_ATTACK ? 0 : getSecondsAsMillis('--cell-marker-animation-time'),
-	COMPUTER_PLACE_TIME : 333,
+	COMPUTER_PLACE_TIME : 1000,
 	BACKGROUND_IMAGES   : true,
 	FILL_SCREEN         : true,   // Use vmin based font size
 	CALCULATE_FONT_SIZE : false,  // Don't rely on CSS vmin font size, attach onresize handler
@@ -91,12 +91,6 @@ export const ATTACK_RESULTS = Enum(
 	'SUNK',
 );
 
-export const SOUND_DEFINITIONS = {
-	[ATTACK_RESULTS.MISS] : { fileName: 'sounds/miss.mp3', volume: 0.1 },
-	[ATTACK_RESULTS.HIT]  : { fileName: 'sounds/hit.mp3' , volume: 0.7 },
-	[ATTACK_RESULTS.SUNK] : { fileName: 'sounds/sunk.mp3', volume: 1 },
-};
-
 export const GAME_PHASES = Const({
 	DEPLOY         : 'deploy',
 	WAIT_READY     : 'waitready',
@@ -117,6 +111,12 @@ export const SHIP_DEFINITION = DEBUG.REDUCED_NR_SHIPS
 		{type:'destroyer', amount: 3, size: 2},
 		{type:'submarine', amount: 4, size: 1},
 	];
+
+export const SOUND_DEFINITIONS = {
+	[ATTACK_RESULTS.MISS] : { fileName: 'sounds/miss.mp3', volume: 0.1 },
+	[ATTACK_RESULTS.HIT]  : { fileName: 'sounds/hit.mp3' , volume: 0.7 },
+	[ATTACK_RESULTS.SUNK] : { fileName: 'sounds/sunk.mp3', volume: 1 },
+};
 
 export const YOUTUBE_MUSIC_LINK = 'https://www.youtube.com/watch?v=hFpB1EjOBSE&list=PL32CA0E2B242C8D32';
 

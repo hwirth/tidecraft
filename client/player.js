@@ -284,7 +284,6 @@ export class Player {
 		}
 
 		ship.deploy({ coords, orientation });
-		console.log('DEPLOYED:', ship);
 
 		const deltaX = (orientation === 'horizontal') ? 1 : 0;
 		const deltaY = (orientation === 'vertical') ? 1 : 0;

@@ -15,7 +15,9 @@ export class Game {
 
 	constructor({ messageBroker, player1, player2 }) {
 		this.broadcast = messageBroker.subscribe({
-			sender: this, messageHandlers: {
+			sender : this,   // For debugging only
+			id     : null,   // Listen for messages with and without id
+			messageHandlers: {
 				[SIGNALS.RESET_GAME]     :  this.onResetGame,
 				[SIGNALS.PLAYER_READY]   :  this.onPlayerReady,
 				[SIGNALS.PERFORM_ATTACK] :  this.onPerformAttack,

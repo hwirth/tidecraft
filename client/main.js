@@ -15,6 +15,7 @@ import { Player } from './player.js';
 import { Game } from './game.js';
 
 export class Application {
+	broadcast;
 
 	constructor () {
 		console.log( `%c${PROGRAM_NAME} v${PROGRAM_VERSION}`, 'color:green');
@@ -22,23 +23,34 @@ export class Application {
 	}
 
 	init = async() => {
+		// Create new session
 		const messageBroker = await new MessageBroker(OPTIONS.REMOTE_OPPONENT);
 		if (DEBUG.NETWORK) console.log('messageBroker.online:', messageBroker.online);
 
 		this.broadcast = messageBroker.subscribe({
-			sender: this, messageHandlers: {
+			sender : this,   // For debugging only
+			id     : null,   // Listen to messages with or without id
+			messageHandlers: {
 				[SIGNALS.UI_READY] : this.#onUiReady,
 			},
 		});
 
+		// Determine online/local and client is player 1 or 2
 		let player1type, player2type, isGameMaster;
-		if (OPTIONS.REMOTE_OPPONENT && messageBroker.online) {
-			player1type = OPTIONS.PLAYER1_HUMAN ? PLAYER_TYPES.HUMAN : PLAYER_TYPES.REMOTE;
-			player2type = OPTIONS.PLAYER1_HUMAN ? PLAYER_TYPES.REMOTE : PLAYER_TYPES.HUMAN;
-			isGameMaster = (player1type === PLAYER_TYPES.HUMAN);
+
+		const player1Human   = OPTIONS.PLAYER1_HUMAN;
+		const opponentRemote = OPTIONS.REMOTE_OPPONENT;
+		const typeHuman      = PLAYER_TYPES.HUMAN;
+		const typeComputer   = PLAYER_TYPES.COMPUTER;
+		const typeRemote     = PLAYER_TYPES.REMOTE;
+
+		if (opponentRemote && messageBroker.online) {
+			player1type = player1Human ? typeHuman : typeRemote;
+			player2type = player1Human ? typeRemote : typeHuman;
+			isGameMaster = (player1type === typeHuman);
 		} else {
-			player1type = OPTIONS.PLAYER1_HUMAN ? PLAYER_TYPES.HUMAN : PLAYER_TYPES.COMPUTER;
-			player2type = OPTIONS.PLAYER1_HUMAN ? PLAYER_TYPES.COMPUTER : PLAYER_TYPES.HUMAN;
+			player1type = player1Human ? typeHuman : typeComputer;
+			player2type = player1Human ? typeComputer : typeHuman;
 			isGameMaster = true;
 		}
 
@@ -48,6 +60,7 @@ export class Application {
 		console.log('Game Master:', isGameMaster);
 		console.groupEnd();
 
+		// Create app
 		const shipDefinitions = SHIP_DEFINITION;
 
 		this.player1 = new Player({
@@ -85,7 +98,7 @@ export class Application {
 	};
 
 	#onUiReady = () => {
-		this.broadcast({ signal: SIGNALS.RESET_GAME });
+		this.broadcast({ signal: SIGNALS.RESET_GAME });   //TODO Move to game, once lobby exists
 	};
 
 }
