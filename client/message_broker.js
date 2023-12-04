@@ -52,7 +52,7 @@ export class MessageBroker {
 					if (messageCount < 0) return;
 				}
 
-				if (DEBUG.MESSAGES) console.log( '>', sender.constructor.name, id, message, handler );
+				if (DEBUG.MESSAGES) console.log( message, '-->', sender.constructor.name + '.' + handler.name, 'id:', id );
 				handler(message);
 			}
 		};

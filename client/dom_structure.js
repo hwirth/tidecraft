@@ -53,8 +53,9 @@ function newGrid() {
 }
 
 export function createDOMStructure(shipDefinitions) {
-	document.body.innerHTML = '';
-	document.body.append(...newElements([
+	//document.body.innerHTML = '';  TODO
+	//document.body.append(...newElements([
+	document.querySelector('#gameboard').append(...newElements([
 		{ tag: 'h1', innerText: document.title },
 		{ tag: 'a', innerText: 'Music', id: 'music_link', target: 'supreme_music', href: YOUTUBE_MUSIC_LINK },
 		{ tag: 'div', class: 'board', children: newElements([

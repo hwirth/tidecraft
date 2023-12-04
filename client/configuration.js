@@ -18,7 +18,7 @@ const DEV_SERVER = (location.hostname === '127.0.0.1');
 export const DEBUG = {
 	/* Options: */
 	REDUCED_NR_SHIPS    : DEV_SERVER && !false,   // Reduce amount of ships
-	QUICK_ATTACK        : DEV_SERVER &&  false,   // AI responds without animation delay
+	QUICK_ATTACK        : DEV_SERVER && !false,   // AI responds without animation delay
 	STOP_AFTER_MESSAGES :(DEV_SERVER &&  false) ? 50 : null,   // MessageBroker: Stop relaying after amount
 	/* console.log()s: */
 	UI                  : DEV_SERVER && !false,
@@ -32,7 +32,6 @@ export const DEBUG = {
 };
 
 export const SETTINGS = {
-	ENUM_STORES_STRINGS : DEV_SERVER || !false,
 	BODY_FADE_TIME      : 250,
 	ANIMATE_ATTACK_TIME : DEBUG.QUICK_ATTACK ? 0 : getSecondsAsMillis('--cell-marker-animation-time'),
 	COMPUTER_PLACE_TIME : 1000,
@@ -51,8 +50,27 @@ export const OPTIONS = {
 	REMOTE_OPPONENT   : queryParams.get('playerNr') !== null,
 };
 
+export const REQUESTS = Enum(
+	'CHECK_NAME',
+	'CHOOSE_NAME',
+	'LIST_SESSIONS',
+	'JOIN_SESSION',
+	'LEAVE_SESSION',
+);
+
 export const SIGNALS = Enum(
 	'UI_READY',
+	'SHOW_SECTION',
+	'SECTION_READY',
+	// Menu
+	'PLAYER_VS_COMPUTER',
+	'PLAYER_VS_PLAYER',
+	'CHECK_NAME',
+	'CHOOSE_NAME',
+	'NAME_AVAILABLE',
+	'NAME_ACCEPTED',
+	'NAME_REJECTED',
+	// Game
 	'RESET_GAME',
 	'RESET_BOARD',
 	'READY_TO_DEPLOY',
@@ -117,6 +135,31 @@ export const SOUND_DEFINITIONS = {
 	[ATTACK_RESULTS.HIT]  : { fileName: 'sounds/hit.mp3' , volume: 0.7 },
 	[ATTACK_RESULTS.SUNK] : { fileName: 'sounds/sunk.mp3', volume: 1 },
 };
+
+export const RANDOM_TITLES = [
+	'Admiral', 'Rear Admiral', 'Vice Admiral', 'Commander', 'Captain', 'Commodore',
+];
+
+export const RANDOM_NAMES = [
+	'Anchorsplash', 'Aquajester',
+	'Bellysplash', 'Broadergrin', 'Bubbleburp', 'Barnacle',
+	'Chuckler', 'Chuckleweaver', 'Crestcackler',
+	'Dewdrop', 'Driftrider',
+	'Gigglesurge', 'Grinner', 'Goldfisher',
+	'Hillarion', 'Harbordweller',
+	'Inkwell', 'Icebergh', 'Crestbuster',
+	'Kelpmuncher', 'Keelbreaker',
+	'Laughsmith', 'Listing',
+	'Nebulol', 'Neptoon',
+	'Overbeard',
+	'Punsolo', 'Phundroplet', 'Paddlefast',
+	'Rippletide', 'Roguewaver', 'Rumblesplash',
+	'Snickernaut', 'Saltygrin',
+	'Tideturner', 'Tritontickler',
+	'Vortexverve',
+	'Waverider', 'Waketrotter',
+	'Yonderwalt', 'Yachtsitter', 'Yuletide',
+];
 
 export const YOUTUBE_MUSIC_LINK = 'https://www.youtube.com/watch?v=hFpB1EjOBSE&list=PL32CA0E2B242C8D32';
 

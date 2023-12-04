@@ -6,7 +6,7 @@
 import {
 	PROGRAM_NAME, PROGRAM_VERSION,
 	DEBUG, SETTINGS, OPTIONS,
-	SIGNALS, PLAYER_TYPES, SHIP_DEFINITION,
+	PLAYER_TYPES, SHIP_DEFINITION,
 } from './configuration.js';
 
 import { MessageBroker } from './message_broker.js';
@@ -15,6 +15,7 @@ import { Player } from './player.js';
 import { Game } from './game.js';
 
 export class Application {
+	request;
 	broadcast;
 
 	constructor () {
@@ -26,14 +27,6 @@ export class Application {
 		// Create new session
 		const messageBroker = await new MessageBroker(OPTIONS.REMOTE_OPPONENT);
 		if (DEBUG.NETWORK) console.log('messageBroker.online:', messageBroker.online);
-
-		this.broadcast = messageBroker.subscribe({
-			sender : this,   // For debugging only
-			id     : null,   // Listen to messages with or without id
-			messageHandlers: {
-				[SIGNALS.UI_READY] : this.#onUiReady,
-			},
-		});
 
 		// Determine online/local and client is player 1 or 2
 		let player1type, player2type, isGameMaster;
@@ -92,15 +85,10 @@ export class Application {
 		this.ui = new UserInterface({
 			messageBroker,
 			shipDefinitions,
-			playerId : OPTIONS.PLAYER1_HUMAN ? this.player1.playerId : this.player2.playerId,
+			playerId: player1Human ? this.player1.playerId : this.player2.playerId,
 		});
 
 	};
-
-	#onUiReady = () => {
-		this.broadcast({ signal: SIGNALS.RESET_GAME });   //TODO Move to game, once lobby exists
-	};
-
 }
 
 //EOF

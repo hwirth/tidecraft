@@ -38,7 +38,7 @@
 		100% { opacity: 1; }
 	}
 
-	* { margin:0; padding:0; box-sizing:border-box; }
+	* { margin:0; padding:0; box-sizing:border-box; vertical-align:middle; }
 
 	html, body {
 		height: 100%;
@@ -101,6 +101,46 @@
 	}
 
 
+	/* BACKGROUND IMAGES */
+
+	body.images.mainmenu { background-image:url(images/menu.jpg); }
+	body.images.offline  { background-image:url(images/offline.jpg); }
+	body.images.login    { background-image:url(images/login.jpg); }
+	body.images.lobby    { background-image:url(images/lobby.jpg); }
+
+	body.images.waitready     { background-image: url(images/deploy.jpg); }
+	body.images.deploy        { background-image: url(images/deploy.jpg); }
+	body.images.opponentready { background-image: url(images/approaching.jpg); }
+	body.images.waitopponent  { background-image: url(images/deploying.jpg); }
+	body.images.battle        { background-image: url(images/battle.jpg); }
+	body.images.victory       { background-image: url(images/victory.jpg); }
+	body.images.defeat        { background-image: url(images/defeat.jpg); }
+
+	ul { list-style-type: none; }
+	body:not(.mainmenu)  #mainmenu,
+	body:not(.offline)   #offline,
+	body:not(.login)     #login,
+	body:not(.lobby)     #lobby,
+	body:not(.gameboard) #gameboard {
+		display:none;
+	}
+
+
+	/* MAIN MENU */
+
+	#login { display:grid; grid-template-rows:3em 1 2em 3em; gap:0.75em; }
+	#login input { margin-bottom:1em; text-align:center; }
+	#login input.inuse { background:#f008; color:#fc0; }
+	#login .cancel { width:fit-content; }
+
+	#offline p { margin:0.35em 0 1em; }
+
+
+	/* GAME MENU */
+
+	.controls { display:flex; justify-content:center; gap:1em; }
+
+
 	/* LAYOUT */
 
 	.board {
@@ -124,6 +164,44 @@
 	.controls      { grid-area: controls; }
 
 
+	/* INPUTS */
+
+	:focus {
+		outline: none; /* TODO We shouldn't kill focus, but game works with mouse only anyways */
+	}
+	input,
+	button {
+		--shadow-color: #fff8;
+		--border-color: #fff;
+		background-color: #000a;
+		border: solid 2px #fff8;
+		border-radius: 0.5em;
+		padding: 0.2em 1.5em;
+		font-size: 1em;
+		line-height: 1.3;
+		color: #fff;
+	}
+	input {
+		padding-left: 0.5em;
+		padding-right: 0.5em;
+		color: #fff;
+		background-color: #fff3;
+	}
+	::selection { background-color: #08f; color: #fff; }
+
+	input:hover:not(:disabled), input:active:focus,
+	button:hover:not(:disabled), button:active:focus {
+		outline: none;
+		border-color: var(--border-color);
+		box-shadow: 0 0 5px 1px var(--shadow-color);
+	}
+	button:disabled {
+		--shadow-color: #aaa;
+		border-color: #444;
+		color: #444;
+	}
+
+
 	/* GRIDS, SHIPYARD */
 
 	.grid,
@@ -135,21 +213,13 @@
 			inset 0 0 0 1px #022
 		;
 	 }
-	 .images .grid, .images .yard {
+	 .images .grid,
+	 .images .yard {
 		background-image: url(images/ocean.webp);
 	}
-	.images .grid.player {
-		background-position: center left;
-		background-size: 200%;
-	}
-	.images .grid.opponent {
-		background-position: center right;
-		background-size: 200%;
-	}
-	.images .yard {
-		background-position: bottom center;
-		background-size: 100%;
-	}
+	.images .grid.player   { background-position:center left; background-size: 200%; }
+	.images .grid.opponent { background-position:center right; background-size: 200%; }
+	.images .yard          { background-position:bottom center; background-size: 100%; }
 
 
 	/* GRIDS */
@@ -165,25 +235,15 @@
 		border: solid 1px #0004;
 		border-width: 0 0 1px 1px;
 	}
-	td:first-of-type {
-		border-width: 0 0 1px 0;
-	}
-	td:last-of-type {
-		border-width: 0 0 1px 1px;
-	}
-	tr:last-of-type td {
-		border-width: 0 0 0 1px;
-	}
-	tr:last-of-type td:first-of-type {
-		border-width: 0;
-	}
+	td:first-of-type                 { border-width:0 0 1px 0; }
+	td:last-of-type                  { border-width:0 0 1px 1px; }
+	tr:last-of-type td               { border-width:0 0 0 1px; }
+	tr:last-of-type td:first-of-type { border-width:0; }
 
 
 	/* ATTACK RESULTS */
 
-	.opponent td.sunk {
-		background-color: #0124;
-	}
+	.opponent td.sunk { background-color:#0124; }
 
 	td.attacked::after {
 		content: '';
@@ -256,10 +316,7 @@
 		padding: 0.5em;
 		position: relative;
 	}
-	.yard.vertical li {
-		width: 2em;
-		padding-top: 0.5em;
-	}
+	.yard.vertical li { width:2em; padding-top:0.5em; }
 	.yard.horizontal li {
 		display: flex;
 		justify-content: center;
@@ -291,30 +348,17 @@
 		box-shadow: 0 0 0 0 #fff0;
 		transition: box-shadow var(--ship-transition-time) linear;
 	}
-	.grid .ship {
-		margin: -1px -1px 0 0;
-	}
+	.grid .ship { margin:-1px -1px 0 0; }
 	.ship.dragged {
 		--size1: calc(var(--cell-size) * 0.3);
 		--size2: calc(var(--cell-size) * 0.9);
 		pointer-events: none;
 		box-shadow: 0 0 var(--size1) var(--size2) #fff4;
 	}
-	.ship.horizontal {
-		height: var(--cell-size);
-		white-space: nowrap;
-	}
-	.ship > span {
-		width: var(--cell-size);
-		height: var(--cell-size);
-		position: relative;
-	}
-	.ship.horizontal span {
-		display: inline-block;
-	}
-	.ship.vertical span {
-		display: block;
-	}
+	.ship.horizontal { height:var(--cell-size); white-space:nowrap; }
+	.ship > span { width: var(--cell-size); height: var(--cell-size); position: relative; }
+	.ship.horizontal span { display: inline-block; }
+	.ship.vertical   span { display: block; }
 	.ship.carrier   { background-color: #aaa; }
 	.ship.cruiser   { background-color: #888; }
 	.ship.destroyer { background-color: #666; }
@@ -325,9 +369,7 @@
 	.ship.destroyer {
 		border-radius: 50% 50% 20% 20%;
 	}
-	.ship.submarine {
-		border-radius: 50% 0% 50% 0%;
-	}
+	.ship.submarine { border-radius:50% 0% 50% 0%; }
 
 	.ship.carrier.horizontal,
 	.ship.cruiser.horizontal,
@@ -335,41 +377,7 @@
 		border-radius: 20% 50% 50% 20%;
 	}
 
-	.sunk .ship {
-		background-color: #0124;
-	}
-
-
-	/* MENU */
-
-	.controls {
-		display: flex;
-		justify-content: center;
-		gap: 1em;
-	}
-	button {
-		--shadow-color: #fff8;
-		--border-color: #fff;
-		background-color: #000a;
-		border: solid 2px #fff8;
-		border-radius: 0.5em;
-		padding: 0.5em 1.5em;
-		font-size: 0.75em;
-		color: #fff;
-	}
-	button:focus {
-		outline: none; /* TODO We shouldn't kill focus, but game works with mouse only anyways */
-	}
-	button:hover:not(:disabled), button:active:focus {
-		outline: none;
-		border-color: var(--border-color);
-		box-shadow: 0 0 5px 1px var(--shadow-color);
-	}
-	button:disabled {
-		--shadow-color: #aaa;
-		border-color: #444;
-		color: #444;
-	}
+	.sunk .ship { background-color:#0124; }
 
 
 	/* GAME PHASES */
@@ -381,27 +389,6 @@
 	.battle .yard,
 	.receiving .grid.opponent {
 		filter: var(--inactive-filter);
-	}
-
-
-	body.images.waitready,
-	body.images.deploy {
-		background-image: url(images/deploy.jpg);
-	}
-	body.images.opponentready {
-		background-image: url(images/approaching.jpg);
-	}
-	body.images.waitopponent {
-		background-image: url(images/deploying.jpg);
-	}
-	body.images.battle {
-		background-image: url(images/battle.jpg);
-	}
-	body.images.victory {
-		background-image: url(images/victory.jpg);
-	}
-	body.images.defeat {
-		background-image: url(images/defeat.jpg);
 	}
 
 	.yard::after {
@@ -421,32 +408,59 @@
 	.victory       .yard::after { content: 'Victory'; }
 	.defeat        .yard::after { content: 'Defeat'; }
 
+
+	/*TODO EXPERIMENTAL GRAPHICS */
+
+	body.perspective #gameboard { transform: scale(1,0.6) rotate(45deg); }
+	#gameboard .ship { background-size: cover; background-position: center; background-repeat: no-repeat; }
+	#gameboard .submarine { background-size: contain; background-size:150%; }
+	.ship.carrier.vertical   { background-image: url(images/carrier_vertical.png); }
+	.ship.cruiser.vertical   { background-image: url(images/cruiser_vertical.png); }
+	.ship.destroyer.vertical { background-image: url(images/submarine_vertical.png); }
+	.ship.submarine.vertical { background-image: url(images/submarine1.png); }
+
+	.ship.carrier.horizontal   { background-image: url(images/carrier.png); }
+	.ship.cruiser.horizontal   { background-image: url(images/cruiser.png); }
+	.ship.destroyer.horizontal { background-image: url(images/submarine.png); }
+	.ship.submarine.horizontal { background-image: url(images/submarine1.png); }
+
+
 </style></head><body class="images">
 
-	<section id="noscript">
+	<section class="noscript">
 		<h1>Supreme Tidecraft</h1>
 		<p>Please enable Javascript</p>
 	</section>
-	<script>
+	<script class="noscript">
 		document.body.classList.add('fade');
-		document.querySelector('#noscript').remove();
+		document.querySelectorAll('.noscript').forEach(element => element.remove());
 	</script>
-<!--
+
 	<section id="mainmenu">
 		<h1>Supreme Tidecraft</h1>
 		<button class="local">Player vs. Computer</button>
-		<button class="lobby">Player vs. Player</button>
+		<button class="login" disabled>Player vs. Player</button>
 	</section>
 
-	<section id="lobby" class="hidden">
-		<h1>Lobby</h1>
-		<div id="login">
-			<label>
-				<span>Choose a name:</span>
-				<input id="message" type="text" class="notavailable">
-			</label>
-			<button class="login">Accept</button>
+	<section id="offline">
+		<h1>Signal Blackout</h1>
+		<p>Unable to establish communications</p>
+		<button>Back</button>
+	</section>
+
+	<section id="login">
+		<h1>Sempahore Dispatch</h1>
+		<label for="callsign">Call Sign:</label>
+		<input id="callsign" type="text" class="autofocus">
+		<div>
+			<button class="random">Random</button>
+			<button class="cancel">Cancel</button>
+			<button class="accept">Accept</button>
 		</div>
+	</section>
+
+	<section id="lobby">
+		<h1>Lobby</h1>
 		<ul id="users">
 			<li>Alice</li>
 			<li>Bob</li>
@@ -464,13 +478,7 @@
 		<button class="back">Main Menu</button>
 	</section>
 
-	<section id="chat" class="hidden">
-		<div class="output"></div>
-		<input type="text">
-		<input type="submit">
-	</section>
-
 	<section id="gameboard">
 	</section>
--->
+
 </body></html>

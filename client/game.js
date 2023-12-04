@@ -29,7 +29,7 @@ export class Game {
 		this.player2      = player2;
 	}
 
-	/*eslint-disable-next-line indent*/
+
 // MESSAGE HANDLERS //////////////////////////////////////////////////////////////////////////////////////////////119:/
 
 	onResetGame = () => {

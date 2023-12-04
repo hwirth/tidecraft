@@ -3,8 +3,12 @@
 // Battleships - copy(l)eft 2023 - https://harald.ist.org/
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////119:/
 
-import { DEBUG, SETTINGS, OPTIONS } from './configuration.js';
-import { SIGNALS, GAME_PHASES, ATTACK_RESULTS } from './configuration.js';
+import {
+	DEBUG, SETTINGS, OPTIONS,
+	REQUESTS, SIGNALS, GAME_PHASES, ATTACK_RESULTS,
+	RANDOM_TITLES, RANDOM_NAMES,
+} from './configuration.js';
+
 import { createDOMStructure } from './dom_structure.js';
 import { Sounds } from './sounds.js';
 
@@ -18,6 +22,16 @@ export class UserInterface {
 	constructor({ messageBroker, shipDefinitions, playerId }) {
 		this.broadcast = messageBroker.subscribe({
 			sender: this, id: playerId, messageHandlers: {
+				// Menu
+				[SIGNALS.SHOW_SECTION]       : this.onShowSection,
+				[SIGNALS.PLAYER_VS_COMPUTER] : this.onPlayerVsComputer,
+				[SIGNALS.PLAYER_VS_PLAYER]   : this.onPlayerVsPlayer,
+				[SIGNALS.CHECK_NAME]         : this.onCheckName,
+				[SIGNALS.NAME_AVAILABLE]     : this.onNameAvailable,
+				[SIGNALS.NAME_REJECTED]      : this.onNameRejected,
+				[SIGNALS.NAME_ACCEPTED]      : this.onNameAccepted,
+
+				// Game messages
 				[SIGNALS.RESET_BOARD]     : this.onResetBoard,
 				[SIGNALS.START_PLACING]   : this.onStartPlacing,
 				[SIGNALS.ACCEPT_DEPLOY]   : this.onAcceptDeploy,
@@ -34,7 +48,7 @@ export class UserInterface {
 
 		this.playerId = playerId;
 
-		this.init(shipDefinitions);  // Dispatch async init
+		this.init(shipDefinitions);   // Dispatch async init
 	}
 
 	init = async(shipDefinitions) => {
@@ -48,22 +62,30 @@ export class UserInterface {
 
 		createDOMStructure(shipDefinitions);
 
-		const selectors = {
-			btnOrientation : '[name=orientation]',
-			btnShipsToYard : '[name=clearboard]',
-			btnReady       : '[name=ready]',
-			btnNewGame     : '[name=newgame]',
-			board          : '.board',
-			allCells       : 'ALL td',
-			opponentGrid   : '.grid.opponent',
-			playerGrid     : '.grid.player',
-			playerRows     : 'ALL .grid.player tr',
-			yard           : '.yard',
-			yardSlots      : 'ALL .yard li',
-			ships          : 'ALL div.ship',
-		};
-
-		this.elements = Object.entries( selectors ).reduce( (prev, [name, selector])=>{
+		this.elements = Object.entries({
+			// Menu
+			sections            : 'ALL section',
+			btnPlayerVsComputer : '#mainmenu .local',
+			btnPlayerVsPlayer   : '#mainmenu .login',
+			btnOfflineBack      : '#offline button',
+			txtLoginName        : '#login input',
+			btnLoginRandom      : '#login .random',
+			btnLoginCancel      : '#login .cancel',
+			btnLoginAccept      : '#login .accept',
+			// Game
+			btnOrientation      : '[name=orientation]',
+			btnShipsToYard      : '[name=clearboard]',
+			btnReady            : '[name=ready]',
+			btnNewGame          :  '[name=newgame]',
+			board               :  '.board',
+			allCells            :  'ALL td',
+			opponentGrid        :  '.grid.opponent',
+			playerGrid          :  '.grid.player',
+			playerRows          :  'ALL .grid.player tr',
+			yard                :  '.yard',
+			yardSlots           :  'ALL .yard li',
+			ships               :  'ALL div.ship',
+		}).reduce( (prev, [name, selector])=>{
 			return (
 				(selector.slice(0,3) === 'ALL')
 					? {...prev, [name]: document.querySelectorAll(selector.slice(4))}
@@ -71,21 +93,36 @@ export class UserInterface {
 			);
 		}, {});
 
+		[ // Event Listeners
+			// Menu
+			{ element: 'btnPlayerVsComputer', event: 'mouseup', handler: this.onPlayerVsComputerClick },
+			{ element: 'btnPlayerVsPlayer'  , event: 'mouseup', handler: this.onPlayerVsPlayerClick },
+			{ element: 'btnOfflineBack'     , event: 'mouseup', handler: this.onLoginCancelClick },
+			{ element: 'txtLoginName'       , event: 'change' , handler: this.onLoginNameChange },
+			{ element: 'txtLoginName'       , event: 'input'  , handler: this.onLoginNameChange },
+			{ element: 'txtLoginName'       , event: 'focus'  , handler: this.onLoginNameChange },
+			{ element: 'btnLoginRandom'     , event: 'mouseup', handler: this.onLoginRandomClick },
+			{ element: 'btnLoginAccept'     , event: 'mouseup', handler: this.onLoginAcceptClick },
+			{ element: 'btnLoginCancel'     , event: 'mouseup', handler: this.onLoginCancelClick },
+			// Game
+			{ element: 'btnNewGame'         , event: 'mouseup', handler: this.onNewGameClick },
+			{ element: 'btnOrientation'     , event: 'mouseup', handler: this.onOrientationClick },
+			{ element: 'btnShipsToYard'     , event: 'mouseup', handler: this.onMoveShipsToYardClick },
+			{ element: 'btnReady'           , event: 'mouseup', handler: this.onPlayerReadyClick },
+			{ element: 'opponentGrid'       , event: 'mouseup', handler: this.onOpponentGridClick },
+		].forEach(entry => this.elements[entry.element].addEventListener(entry.event, entry.handler) );
+
+		this.elements.ships.forEach( (ship)=>{
+			ship.addEventListener('mousedown', this.onShipDragStart);
+		});
+		addEventListener('keydown', this.onKeyDown);
+
+		// Game
 		this.setButtonsEnabled({
 			btnOrientation : true,
 			btnShipsToYard : false,
 			btnReady       : false,
 		});
-
-		this.elements.btnOrientation.addEventListener('mouseup', this.onOrientationClick);
-		this.elements.btnShipsToYard.addEventListener('mouseup', this.onMoveShipsToYardClick);
-		this.elements.ships.forEach( (ship)=>{
-			ship.addEventListener('mousedown', this.onShipDragStart);
-		});
-		this.elements.btnReady    .addEventListener('mouseup', this.onPlayerReadyClick);
-		this.elements.btnNewGame  .addEventListener('mouseup', this.onNewGameClick);
-		this.elements.opponentGrid.addEventListener('mouseup', this.onOpponentGridClick);
-		addEventListener('keydown', this.onKeyDown);
 
 		this.setCurrentPlayer(null);
 		this.canDeploy = false;
@@ -97,11 +134,93 @@ export class UserInterface {
 		this.sounds = await new Sounds();
 
 		document.body.classList.remove('fade');
-		setTimeout(()=>this.broadcast({ signal: SIGNALS.UI_READY }), SETTINGS.BODY_FADE_TIME);
+		document.body.classList.add('mainmenu');
+		setTimeout(()=>this.broadcast({ signal: SIGNALS.UI_READY }), SETTINGS.BODY_FADE_TIME); //TODO Not used??
 	};
 
-	/*eslint-disable-next-line indent*/
-// MESSAGES //////////////////////////////////////////////////////////////////////////////////////////////////////119:/
+
+// MESSAGES - MENU ///////////////////////////////////////////////////////////////////////////////////////////////119:/
+
+	onShowSection = (message) => {
+		document.body.classList.add('fade');
+		setTimeout(() => {
+			const toggleHidden = section => document.body.classList.toggle(section.id, section.id === message.sectionId);
+			this.elements.sections.forEach(toggleHidden);
+			document.body.classList.remove('fade');
+			const focusElement = document.body.querySelector(`#${message.sectionId} .autofocus`);
+			if (focusElement) focusElement.select();
+			setTimeout(() => {
+				this.broadcast({ signal: SIGNALS.SECTION_READY, sectionId: message.sectionId });
+			}, SETTINGS.BODY_FADE_TIME);
+		}, SETTINGS.BODY_FADE_TIME);
+	};
+
+	onPlayerVsComputer = () => {
+		this.broadcast({ signal: SIGNALS.SHOW_SECTION, sectionId: 'gameboard' });
+		this.broadcast({ signal: SIGNALS.RESET_GAME });
+	};
+
+	onPlayerVsPlayer = () => {
+		//TODO if (this.online)
+		this.broadcast({ signal: SIGNALS.SHOW_SECTION, sectionId: 'login' });
+
+		const name = this.elements.txtLoginName.value;
+		if (name === '') this.onLoginRandomClick();
+	};
+
+	onCheckName = () => {
+		const name = this.elements.txtLoginName.value;
+		this.broadcast({ request: REQUESTS.CHECK_NAME, name });
+	};
+
+	onNameAvailable = () => {
+		this.elements.txtLoginName.classList.toggle('inuse', false);
+		this.enableElement(this.elements.btnLoginAccept, true);
+	};
+
+	onNameRejected = () => {
+		this.elements.txtLoginName.classList.toggle('inuse', true);
+		this.enableElement(this.elements.btnLoginAccept, false);
+	};
+
+	onNameAccepted = () => {
+		this.broadcast({ signal: SIGNALS.SHOW_SECTION, sectionId: 'offline' });
+	};
+
+
+// DOM EVENTS - MENU /////////////////////////////////////////////////////////////////////////////////////////////119:/
+
+	onPlayerVsComputerClick = () => {
+		this.broadcast({ signal: SIGNALS.PLAYER_VS_COMPUTER });
+	};
+
+	onPlayerVsPlayerClick = () => {
+		this.broadcast({ signal: SIGNALS.PLAYER_VS_PLAYER });
+	};
+
+	onLoginNameChange = () => {
+		this.broadcast({ signal: SIGNALS.CHECK_NAME });
+	};
+
+	onLoginRandomClick = () => {
+		const titleIndex = Math.floor(Math.random() * RANDOM_TITLES.length);
+		const nameIndex = Math.floor(Math.random() * RANDOM_NAMES.length);
+		this.elements.txtLoginName.value = RANDOM_TITLES[titleIndex] + ' ' + RANDOM_NAMES[nameIndex];
+		this.elements.txtLoginName.select();
+		this.broadcast({ signal: SIGNALS.CHECK_NAME });
+	};
+
+	onLoginAcceptClick = () => {
+		const name = this.elements.txtLoginName.value;
+		this.broadcast({ request: SIGNALS.CHOOSE_NAME, name });
+	};
+
+	onLoginCancelClick = () => {
+		this.broadcast({ signal: SIGNALS.SHOW_SECTION, sectionId: 'mainmenu' });
+	};
+
+
+// MESSAGES - GAME ///////////////////////////////////////////////////////////////////////////////////////////////119:/
 
 	onResetBoard = () => {
 		this.setGamePhase(GAME_PHASES.DEPLOY);
@@ -203,8 +322,7 @@ export class UserInterface {
 		this.setGamePhase(GAME_PHASES.VICTORY);
 	};
 
-	/*eslint-disable-next-line indent*/
-// UI EVENTS /////////////////////////////////////////////////////////////////////////////////////////////////////119:/
+// DOM EVENTS - GAME /////////////////////////////////////////////////////////////////////////////////////////////119:/
 
 	onOrientationClick = () => {
 		if (!this.canDeploy) return;
@@ -300,29 +418,19 @@ export class UserInterface {
 	onOpponentGridClick = (event) => {
 		if (!this.canAttack) return;
 
-		this.canAttack = false;
-		if (DEBUG.UI) console.log('UserInterface.onOpponentGridClick: %ccanAttack:', 'color:red', this.canAttack);
-
 		const notLeftButton = (event.button !== 0);
 		const notACell = (event.target.tagName !== 'TD');
 		const alreadyAttacked = event.target.classList.contains('attacked') && !OPTIONS.ATTACK_CELL_TWICE;
 		if (notLeftButton || notACell || alreadyAttacked) return;
 
+		this.canAttack = false;
+		if (DEBUG.UI) console.log('UserInterface.onOpponentGridClick: %ccanAttack:', 'color:red', this.canAttack);
+
 		const coords = this.findGridCoords(event.target);
 		this.broadcast({ signal: SIGNALS.TARGET_CHOSEN, id: this.playerId, coords });
 	};
 
-	onKeyDown = (event) => {
-		console.log(event);   //TODO
-		switch (event.key) {
-			case 'i': {
-				document.body.classList.toggle('images');
-				break;
-			}
-		}
-	};
 
-	/*eslint-disable-next-line indent*/
 // PROCEDURES ////////////////////////////////////////////////////////////////////////////////////////////////////119:/
 
 	moveShipsToYard = () => {
@@ -364,7 +472,7 @@ export class UserInterface {
 		return ship;
 	};
 
-	/*eslint-disable-next-line indent*/
+
 // DOM HELPERS ///////////////////////////////////////////////////////////////////////////////////////////////////119:/
 
 	enableElement = (element, enabled) => {
@@ -393,6 +501,24 @@ export class UserInterface {
 		if (currentPlayerId === null) return;
 		if (currentPlayerId === this.playerId) document.body.classList.add('attacking');
 		if (currentPlayerId !== this.playerId) document.body.classList.add('receiving');
+	};
+
+
+// DEBUG ////////7////////////////////////////////////////////////////////////////////////////////////////////////119:/
+
+	onKeyDown = (event) => {
+		if (event.target.tagName === 'INPUT') return;
+
+		switch (event.key) {
+			case 'i': {
+				document.body.classList.toggle('images');
+				break;
+			}
+			case 'p': {
+				document.body.classList.toggle('perspective');
+				break;
+			}
+		}
 	};
 
 }

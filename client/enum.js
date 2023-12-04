@@ -3,7 +3,7 @@
 // Battleships - copy(l)eft 2023 - https://harald.ist.org/
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////119:/
 
-import { SETTINGS } from './configuration.js';
+const ENUM_STORES_STRINGS = !false;
 
 export function Const(entries) {
 	return new Proxy(entries, {
@@ -22,7 +22,7 @@ export function Const(entries) {
 export function Enum(...keys) {
 	const toInt    = (prev, key, index) => ({...prev, [key]: index});
 	const toString = (prev, key) => ({...prev, [key]: key});
-	const toDict   = (SETTINGS.ENUM_STORES_STRINGS) ? toString : toInt;
+	const toDict   = (ENUM_STORES_STRINGS) ? toString : toInt;
 	const dict = keys.reduce(toDict, {});
 	return new Proxy(dict, {
 		get(_, key) {

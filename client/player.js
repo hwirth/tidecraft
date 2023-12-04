@@ -47,9 +47,7 @@ export class Player {
 	}
 
 
-	//////////////////////
-	// MESSAGE HANDLERS //
-	//////////////////////
+// MESSAGE HANDLERS //////////////////////////////////////////////////////////////////////////////////////////////119:/
 
 	onResetGame = () => {
 		this.createShips();
@@ -224,9 +222,7 @@ export class Player {
 	};
 
 
-	////////////////
-	// PROCEDURES //
-	////////////////
+// PROCEDURES ////////////////////////////////////////////////////////////////////////////////////////////////////119:/
 
 	createShips = () => {
 		let shipId = 0;
@@ -306,23 +302,6 @@ export class Player {
 		ship.cells.forEach(({x, y}) => this.grid[y][x].ship = null);
 		ship.recall();
 
-		/*
-		const coords = ship.cells[0];
-		const orientation = ship.orientation;
-
-		const deltaX = (orientation === 'horizontal') ? 1 : 0;
-		const deltaY = (orientation === 'vertical') ? 1 : 0;
-
-		for (let i = 0; i < ship.size; ++i) {
-			const x = coords.x + i*deltaX;
-			const y = coords.y + i*deltaY;
-			this.grid[y][x].ship = null;
-			ship.cells[i] = null;
-		}
-
-		ship.deployed = false;
-		*/
-
 		if (DEBUG.GRIDS) this.debugGrid('Player.removeShip');
 
 		return { orientation, coords };
@@ -344,9 +323,7 @@ export class Player {
 	};
 
 
-	///////////////////////
-	// COMPUTER OPPONENT //
-	///////////////////////
+// COMPUTER OPPONENT /////////////////////////////////////////////////////////////////////////////////////////////119:/
 
 	aiDeployShip = () => {
 		const ship = this.ships.filter(ship => !ship.deployed)[0];
@@ -373,9 +350,7 @@ export class Player {
 	};
 
 
-	///////////////////
-	// STATE QUERIES //
-	///////////////////
+// STATE QUERIES /////////////////////////////////////////////////////////////////////////////////////////////////119:/
 
 	allShipsDeployed = () => {
 		const shipsInYard = this.ships.filter(ship => !ship.deployed);
@@ -428,9 +403,7 @@ export class Player {
 	};
 
 
-	///////////
-	// DEBUG //
-	///////////
+// DEBUG /////////////////////////////////////////////////////////////////////////////////////////////////////////119:/
 
 	debugGrid = (heading = '') => {
 		if (!DEBUG.GRIDS) return;
