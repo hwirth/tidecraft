@@ -27,6 +27,7 @@ module.exports = {
 			'tab',
 			{
 				'SwitchCase': 1,
+				'ignoreComments': true
 			}
 		],
 		'linebreak-style': [
