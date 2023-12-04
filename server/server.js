@@ -13,6 +13,7 @@ console.log('MESSAGE RELAY SERVER');
 import * as fs    from 'fs';
 import * as https from 'https';
 import * as ws    from 'ws';
+import { Enum } from './enum.js';
 
 const SERVE_DOCUMENTS = !false;
 const DOCUMENT_ROOT = '../client';   // No trailing slash!
@@ -47,6 +48,20 @@ const MIME_TYPES = {
 	ogg    : 'audio/ogg',
 };
 
+const REQUESTS = Enum(
+	'CHECK_NAME',
+	'CHOOSE_NAME',
+	'LIST_SESSIONS',
+	'JOIN_SESSION',
+	'LEAVE_SESSION',
+);
+
+const SIGNALS = Enum(
+	'NAME_AVAILABLE',
+	'NAME_ACCEPTED',
+	'NAME_REJECTED',
+);
+
 
 // WEB SOCKET ////////////////////////////////////////////////////////////////////////////////////////////////////119:/
 
@@ -65,8 +80,78 @@ webSocketServer.on('connection', (webSocket, request)=>{
 
 	console.log(clientAddress, clientPort, 'CONNECT', request.url);
 
-	clients[clientId] = webSocket;
+	clients[clientId] = {
+		webSocket,
+		name    : null,
+		session : null,
+	};
+
 	webSocket.isAlive = true;
+
+	function nameValid(name) {
+		const allowedChars = 'abcdefghijklmnopqrstuvwxyz1234567890 /.,:;_+-!?"*%&()[]{}=#~^';
+		const validChar = (prev, char) => prev && (allowedChars.indexOf(char.toLowerCase()) >= 0);
+		const allCharsValid = () => name.split('').reduce(validChar, true);
+		return (name.length > 0) && allCharsValid();
+	}
+
+	function nameAvailable(name) {
+		if (!nameValid(name)) return false;
+		const hasName = client => client.name === name;
+		const otherClients = client => client !== clients[clientId];
+		const clientUsesName = Object.values(clients).filter(otherClients).find(hasName);
+		return !clientUsesName;
+	}
+
+	function respond(message) {
+		console.log('', message);
+		webSocket.send(JSON.stringify(message));
+	}
+
+	function processRequest(message) {
+		const client = clients[clientId];
+
+		switch (message.request) {
+			case REQUESTS.CHECK_NAME: {
+				const signal = nameAvailable(message.name)
+					? SIGNALS.NAME_AVAILABLE
+					: SIGNALS.NAME_REJECTED;
+				respond({ signal });
+				break;
+			}
+			case REQUESTS.CHOOSE_NAME: {
+				if (nameAvailable(message.name)) {
+					client.name = message.name;
+					respond({ signal: SIGNALS.NAME_ACCEPTED, name: message.name });
+				} else {
+					respond({ signal: SIGNALS.NAME_REJECTED });
+				}
+				break;
+			}
+			case REQUESTS.LIST_SESSIONS: {
+				break;
+			}
+			case REQUESTS.JOIN_SESSION: {
+				break;
+			}
+			case REQUESTS.LEAVE_SESSION: {
+				break;
+			}
+		}
+	}
+
+	function relaySignal(message) {
+		const stillConnected = client => client.webSocket.readyState === webSocket.OPEN;
+		Object.values(clients).filter(stillConnected).forEach((client) => {
+			const ws = client.webSocket;
+			console.log(
+				clientAddress, clientPort, '-->',
+				ws._socket.remoteAddress,
+				ws._socket.remotePort,
+			);
+			ws.send(message);
+		});
+	}
 
 	webSocket.on('pong', () => {
 		console.log(clientAddress, clientPort, 'PONG');
@@ -74,18 +159,15 @@ webSocketServer.on('connection', (webSocket, request)=>{
 	});
 
 	webSocket.on('message', (data, isBinary) => {
-		const message = (isBinary) ? data : data.toString();
-		console.log(clientAddress, clientPort, 'MESSAGE\n', JSON.parse(message, null, '\t'));
+		const json = (isBinary) ? data : data.toString();
+		const message = JSON.parse(json);
+		console.log(clientAddress, clientPort, 'MESSAGE\n', message);
 
-		const stillConnected = client => client.readyState === webSocket.OPEN;
-		Object.values(clients).filter(stillConnected).forEach((client) => {
-			console.log(
-				clientAddress, clientPort, '-->',
-				client._socket.remoteAddress,
-				client._socket.remotePort,
-			);
-			client.send(message);
-		});
+		if (message.request) {
+			processRequest(message);
+		} else {
+			relaySignal(json);
+		}
 	});
 
 	webSocket.on('close', () => {
@@ -95,7 +177,7 @@ webSocketServer.on('connection', (webSocket, request)=>{
 });
 
 const pingInterval = setInterval(()=>{
-	webSocketServer.clients.forEach((ws)=>{
+	webSocketServer.clients.forEach((ws) => {
 		console.log(ws._socket.remoteAddress, ws._socket.remotePort, 'PING');
 		if (ws.isAlive === false) return ws.terminate();
 		ws.isAlive = false;
