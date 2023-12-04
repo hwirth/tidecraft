@@ -1,5 +1,8 @@
 TODO
 ====
+[ ] Sound settings (volume)
+[ ] Paper/Plastic rulesets
+[ ] Use #private methods, where not yet done (e.g. UI)
 [ ] isGameMaster --> isGameHost
 [?] player1, player2 --> host, guest
 [ ] onConnectionLost --> AI takes over (Need to re-enable player checks I removed)
